@@ -1,46 +1,10 @@
 -- ============================================
 -- EXTENDED SCHEMA MIGRATION
 -- Adds tables from PRD that are missing:
--- completion_reports, service_orders, projects,
+-- service_orders, projects, completion_reports,
 -- iso_clients, audits, audit_findings,
 -- warehouses, stock_movements, meetings
 -- ============================================
-
--- ============================================================
--- COMPLETION REPORTS
--- ============================================================
-CREATE TABLE IF NOT EXISTS public.completion_reports (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  order_id UUID REFERENCES public.sales_orders(id) ON DELETE CASCADE,
-  service_order_id UUID REFERENCES public.service_orders(id) ON DELETE CASCADE,
-  project_id UUID REFERENCES public.projects(id) ON DELETE CASCADE,
-  report_type TEXT NOT NULL CHECK (report_type IN ('delivery', 'service', 'project')),
-  delivery_date DATE,
-  received_quantity INTEGER,
-  goods_condition TEXT,
-  discrepancies TEXT,
-  scope_delivered TEXT,
-  milestones_achieved TEXT,
-  deliverables_submitted JSONB,
-  outstanding_items TEXT,
-  photo_attachments TEXT[],
-  signoff_status TEXT NOT NULL DEFAULT 'pending' CHECK (signoff_status IN ('pending', 'signed', 'rejected')),
-  signoff_notes TEXT,
-  customer_signature TEXT,
-  signed_at TIMESTAMPTZ,
-  created_by UUID REFERENCES public.users(id),
-  owner_id UUID REFERENCES public.users(id),
-  team_id UUID REFERENCES public.teams(id),
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
-CREATE INDEX idx_completion_reports_order ON public.completion_reports(order_id);
-CREATE INDEX idx_completion_reports_service_order ON public.completion_reports(service_order_id);
-CREATE INDEX idx_completion_reports_project ON public.completion_reports(project_id);
-CREATE INDEX idx_completion_reports_signoff ON public.completion_reports(signoff_status);
-CREATE INDEX idx_completion_reports_owner ON public.completion_reports(owner_id);
-CREATE INDEX idx_completion_reports_team ON public.completion_reports(team_id);
 
 -- ============================================================
 -- SERVICE ORDERS (ISO consultancy engagements)
@@ -80,6 +44,7 @@ CREATE INDEX idx_service_orders_opportunity ON public.service_orders(opportunity
 
 -- ============================================================
 -- PROJECTS (Supply + Service combined)
+-- FK to completion_reports added AFTER completion_reports is created (circular dep)
 -- ============================================================
 CREATE TABLE IF NOT EXISTS public.projects (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -104,7 +69,7 @@ CREATE TABLE IF NOT EXISTS public.projects (
   status TEXT NOT NULL DEFAULT 'planning' CHECK (status IN ('planning', 'active', 'on_hold', 'completed', 'cancelled')),
   priority TEXT NOT NULL DEFAULT 'normal' CHECK (priority IN ('low', 'normal', 'high', 'urgent')),
   assigned_team UUID[] NOT NULL DEFAULT '{}',
-  completion_report_id UUID REFERENCES public.completion_reports(id),
+  completion_report_id UUID, -- FK added below to avoid circular dependency
   owner_id UUID NOT NULL REFERENCES public.users(id),
   team_id UUID REFERENCES public.teams(id),
   created_by UUID REFERENCES public.users(id),
@@ -115,6 +80,52 @@ CREATE TABLE IF NOT EXISTS public.projects (
 
 CREATE INDEX idx_projects_number ON public.projects(project_number);
 CREATE INDEX idx_projects_account ON public.projects(account_id);
+
+-- ============================================================
+-- COMPLETION REPORTS
+-- FK to projects added below (circular dependency)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS public.completion_reports (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  order_id UUID REFERENCES public.sales_orders(id) ON DELETE CASCADE,
+  service_order_id UUID REFERENCES public.service_orders(id) ON DELETE CASCADE,
+  project_id UUID, -- FK added below to avoid circular dependency
+  report_type TEXT NOT NULL CHECK (report_type IN ('delivery', 'service', 'project')),
+  delivery_date DATE,
+  received_quantity INTEGER,
+  goods_condition TEXT,
+  discrepancies TEXT,
+  scope_delivered TEXT,
+  milestones_achieved TEXT,
+  deliverables_submitted JSONB,
+  outstanding_items TEXT,
+  photo_attachments TEXT[],
+  signoff_status TEXT NOT NULL DEFAULT 'pending' CHECK (signoff_status IN ('pending', 'signed', 'rejected')),
+  signoff_notes TEXT,
+  customer_signature TEXT,
+  signed_at TIMESTAMPTZ,
+  created_by UUID REFERENCES public.users(id),
+  owner_id UUID REFERENCES public.users(id),
+  team_id UUID REFERENCES public.teams(id),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_completion_reports_order ON public.completion_reports(order_id);
+CREATE INDEX idx_completion_reports_service_order ON public.completion_reports(service_order_id);
+CREATE INDEX idx_completion_reports_project ON public.completion_reports(project_id);
+CREATE INDEX idx_completion_reports_signoff ON public.completion_reports(signoff_status);
+CREATE INDEX idx_completion_reports_owner ON public.completion_reports(owner_id);
+CREATE INDEX idx_completion_reports_team ON public.completion_reports(team_id);
+
+-- Add circular foreign keys AFTER both tables exist
+ALTER TABLE IF EXISTS public.completion_reports
+  ADD CONSTRAINT fk_completion_reports_project
+  FOREIGN KEY (project_id) REFERENCES public.projects(id) ON DELETE CASCADE;
+
+ALTER TABLE IF EXISTS public.projects
+  ADD CONSTRAINT fk_projects_completion_report
+  FOREIGN KEY (completion_report_id) REFERENCES public.completion_reports(id);
 
 -- ============================================================
 -- ISO CLIENTS
@@ -290,12 +301,6 @@ CREATE INDEX idx_meetings_assigned ON public.meetings(assigned_to);
 CREATE INDEX idx_meetings_status ON public.meetings(status);
 
 -- ============================================================
--- SYSTEM USER (for seed/test data)
--- Used as fallback owner when no authenticated user is available
--- ============================================================
--- Already exists from earlier migration (20260819000012_fix_system_user_fallback.sql)
-
--- ============================================================
 -- AUTO-NUMBERING TRIGGERS for new tables
 -- ============================================================
 
@@ -344,60 +349,3 @@ CREATE TRIGGER trg_projects_autonumber
   BEFORE INSERT ON public.projects
   FOR EACH ROW
   EXECUTE FUNCTION public.generate_project_number();
-
--- ============================================================
--- UPDATED can_access_record function for new tables
--- ============================================================
-CREATE OR REPLACE FUNCTION public.can_access_record(record_owner_id UUID, record_team_id UUID)
-RETURNS BOOLEAN AS $$
-DECLARE
-  current_user_id UUID := auth.uid();
-  current_role TEXT;
-  current_team_ids UUID[];
-BEGIN
-  -- Debug
-  RAISE LOG 'can_access_record: uid=%, owner=%, team=%', current_user_id, record_owner_id, record_team_id;
-
-  -- Admin and Sales Manager: full access
-  SELECT role INTO current_role FROM public.users WHERE id = current_user_id;
-  
-  IF current_role = 'admin' OR current_role = 'sales_manager' THEN
-    RETURN TRUE;
-  END IF;
-
-  -- Sales Rep, ISO Consultant, Operations, Finance:
-  -- Can see records they own, or system-owned records
-  IF record_owner_id = current_user_id THEN
-    RETURN TRUE;
-  END IF;
-
-  -- System user records visible to all authenticated users
-  IF record_owner_id = '00000000-0000-0000-0000-000000000000' THEN
-    RETURN TRUE;
-  END IF;
-
-  -- Team-based access
-  IF record_team_id IS NOT NULL THEN
-    SELECT ARRAY(
-      SELECT team_id FROM public.user_teams WHERE user_id = current_user_id
-    ) INTO current_team_ids;
-    IF record_team_id = ANY(current_team_ids) THEN
-      RETURN TRUE;
-    END IF;
-  END IF;
-
-  RETURN FALSE;
-END;
-$$ LANGUAGE plpgsql STABLE SECURITY DEFINER;
-
--- ============================================================
--- TRIGGER: Auto-sync auth.users → public.users profile
--- (Updated to handle the new tables properly)
--- ============================================================
--- Already exists from earlier migration (20260819000010_fix_rls_triggers.sql)
-
--- ============================================================
--- TRIGGER: Set owner_id and created_by on all tables
--- ============================================================
--- The set_owner_and_creator() function already exists
--- Let's ensure all new tables have it applied via RLS policies

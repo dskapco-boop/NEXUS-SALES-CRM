@@ -1,6 +1,6 @@
 -- ============================================
 -- RLS POLICIES FOR EXTENDED SCHEMA
--- Policies for: completion_reports, service_orders, 
+-- Policies for: completion_reports, service_orders,
 -- projects, iso_clients, audits, audit_findings,
 -- warehouses, warehouse_stock, stock_movements, meetings
 -- ============================================
@@ -10,22 +10,26 @@
 -- ============================================================
 ALTER TABLE public.completion_reports ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Admins can manage all completion reports" ON public.completion_reports;
 CREATE POLICY "Admins can manage all completion reports"
   ON public.completion_reports FOR ALL
   USING (public.can_access_record(owner_id, team_id));
 
+DROP POLICY IF EXISTS "Sales Managers can manage all completion reports" ON public.completion_reports;
 CREATE POLICY "Sales Managers can manage all completion reports"
   ON public.completion_reports FOR ALL
   USING (
     EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role IN ('admin', 'sales_manager'))
   );
 
+DROP POLICY IF EXISTS "Sales Executives can manage completion reports" ON public.completion_reports;
 CREATE POLICY "Sales Executives can manage completion reports"
   ON public.completion_reports FOR INSERT WITH CHECK (
     auth.uid() = created_by OR
     EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role IN ('admin', 'sales_manager'))
   );
 
+DROP POLICY IF EXISTS "Operations and Finance can view completion reports" ON public.completion_reports;
 CREATE POLICY "Operations and Finance can view completion reports"
   ON public.completion_reports FOR SELECT
   USING (
@@ -37,17 +41,20 @@ CREATE POLICY "Operations and Finance can view completion reports"
 -- ============================================================
 ALTER TABLE public.service_orders ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Admin can manage all service orders" ON public.service_orders;
 CREATE POLICY "Admin can manage all service orders"
   ON public.service_orders FOR ALL
   USING (EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'admin'));
 
+DROP POLICY IF EXISTS "Sales Manager can manage team service orders" ON public.service_orders;
 CREATE POLICY "Sales Manager can manage team service orders"
   ON public.service_orders FOR ALL
   USING (
-    EXISTS (SELECT 1 FROM public.users u WHERE id = auth.uid() AND role = 'sales_manager')
+    EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role IN ('admin', 'sales_manager'))
     OR EXISTS (SELECT 1 FROM public.user_teams ut JOIN public.users u ON ut.user_id = auth.uid() WHERE u.role = 'sales_manager' AND ut.team_id = service_orders.team_id)
   );
 
+DROP POLICY IF EXISTS "Sales Executive can manage own service orders" ON public.service_orders;
 CREATE POLICY "Sales Executive can manage own service orders"
   ON public.service_orders FOR ALL
   USING (
@@ -55,6 +62,7 @@ CREATE POLICY "Sales Executive can manage own service orders"
     OR EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role IN ('admin', 'sales_manager'))
   );
 
+DROP POLICY IF EXISTS "ISO Consultant can manage assigned service orders" ON public.service_orders;
 CREATE POLICY "ISO Consultant can manage assigned service orders"
   ON public.service_orders FOR ALL
   USING (
@@ -62,6 +70,7 @@ CREATE POLICY "ISO Consultant can manage assigned service orders"
     OR EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role IN ('admin', 'sales_manager'))
   );
 
+DROP POLICY IF EXISTS "Operations and Finance can read service orders" ON public.service_orders;
 CREATE POLICY "Operations and Finance can read service orders"
   ON public.service_orders FOR SELECT
   USING (
@@ -73,10 +82,12 @@ CREATE POLICY "Operations and Finance can read service orders"
 -- ============================================================
 ALTER TABLE public.projects ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Admin can manage all projects" ON public.projects;
 CREATE POLICY "Admin can manage all projects"
   ON public.projects FOR ALL
   USING (EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'admin'));
 
+DROP POLICY IF EXISTS "Sales Manager can manage team projects" ON public.projects;
 CREATE POLICY "Sales Manager can manage team projects"
   ON public.projects FOR ALL
   USING (
@@ -84,6 +95,7 @@ CREATE POLICY "Sales Manager can manage team projects"
     OR EXISTS (SELECT 1 FROM public.user_teams ut JOIN public.users u ON ut.user_id = auth.uid() WHERE u.role = 'sales_manager' AND ut.team_id = projects.team_id)
   );
 
+DROP POLICY IF EXISTS "Sales Executive can manage own projects" ON public.projects;
 CREATE POLICY "Sales Executive can manage own projects"
   ON public.projects FOR ALL
   USING (
@@ -91,6 +103,7 @@ CREATE POLICY "Sales Executive can manage own projects"
     OR EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role IN ('admin', 'sales_manager'))
   );
 
+DROP POLICY IF EXISTS "ISO Consultant can manage assigned projects" ON public.projects;
 CREATE POLICY "ISO Consultant can manage assigned projects"
   ON public.projects FOR ALL
   USING (
@@ -98,6 +111,7 @@ CREATE POLICY "ISO Consultant can manage assigned projects"
     OR EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role IN ('admin', 'sales_manager'))
   );
 
+DROP POLICY IF EXISTS "Operations and Finance can read projects" ON public.projects;
 CREATE POLICY "Operations and Finance can read projects"
   ON public.projects FOR SELECT
   USING (
@@ -109,14 +123,17 @@ CREATE POLICY "Operations and Finance can read projects"
 -- ============================================================
 ALTER TABLE public.iso_clients ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Admin can manage all ISO clients" ON public.iso_clients;
 CREATE POLICY "Admin can manage all ISO clients"
   ON public.iso_clients FOR ALL
   USING (EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'admin'));
 
+DROP POLICY IF EXISTS "Sales Manager can read ISO clients" ON public.iso_clients;
 CREATE POLICY "Sales Manager can read ISO clients"
   ON public.iso_clients FOR SELECT
   USING (EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role IN ('admin', 'sales_manager')));
 
+DROP POLICY IF EXISTS "ISO Consultant can manage assigned ISO clients" ON public.iso_clients;
 CREATE POLICY "ISO Consultant can manage assigned ISO clients"
   ON public.iso_clients FOR ALL
   USING (
@@ -124,6 +141,7 @@ CREATE POLICY "ISO Consultant can manage assigned ISO clients"
     OR EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'admin')
   );
 
+DROP POLICY IF EXISTS "Others cannot access ISO client data" ON public.iso_clients;
 CREATE POLICY "Others cannot access ISO client data"
   ON public.iso_clients FOR SELECT USING (FALSE);
 
@@ -132,10 +150,12 @@ CREATE POLICY "Others cannot access ISO client data"
 -- ============================================================
 ALTER TABLE public.audits ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Admin can manage all audits" ON public.audits;
 CREATE POLICY "Admin can manage all audits"
   ON public.audits FOR ALL
   USING (EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'admin'));
 
+DROP POLICY IF EXISTS "ISO Consultant can manage assigned audits" ON public.audits;
 CREATE POLICY "ISO Consultant can manage assigned audits"
   ON public.audits FOR ALL
   USING (
@@ -145,6 +165,7 @@ CREATE POLICY "ISO Consultant can manage assigned audits"
     OR EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'admin')
   );
 
+DROP POLICY IF EXISTS "Sales Manager can read audits" ON public.audits;
 CREATE POLICY "Sales Manager can read audits"
   ON public.audits FOR SELECT
   USING (EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role IN ('admin', 'sales_manager')));
@@ -154,10 +175,12 @@ CREATE POLICY "Sales Manager can read audits"
 -- ============================================================
 ALTER TABLE public.audit_findings ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Admin can manage all audit findings" ON public.audit_findings;
 CREATE POLICY "Admin can manage all audit findings"
   ON public.audit_findings FOR ALL
   USING (EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'admin'));
 
+DROP POLICY IF EXISTS "ISO Consultant can manage assigned findings" ON public.audit_findings;
 CREATE POLICY "ISO Consultant can manage assigned findings"
   ON public.audit_findings FOR ALL
   USING (
@@ -165,6 +188,7 @@ CREATE POLICY "ISO Consultant can manage assigned findings"
     OR EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'admin')
   );
 
+DROP POLICY IF EXISTS "Assigned users can read findings" ON public.audit_findings;
 CREATE POLICY "Assigned users can read findings"
   ON public.audit_findings FOR SELECT
   USING (
@@ -177,18 +201,22 @@ CREATE POLICY "Assigned users can read findings"
 -- ============================================================
 ALTER TABLE public.warehouses ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Admin can manage all warehouses" ON public.warehouses;
 CREATE POLICY "Admin can manage all warehouses"
   ON public.warehouses FOR ALL
   USING (EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'admin'));
 
+DROP POLICY IF EXISTS "Sales Manager can read warehouses" ON public.warehouses;
 CREATE POLICY "Sales Manager can read warehouses"
   ON public.warehouses FOR SELECT
   USING (EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role IN ('admin', 'sales_manager')));
 
+DROP POLICY IF EXISTS "Operations can manage warehouses" ON public.warehouses;
 CREATE POLICY "Operations can manage warehouses"
   ON public.warehouses FOR ALL
   USING (EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role IN ('admin', 'operations')));
 
+DROP POLICY IF EXISTS "Sales Executive can read warehouses" ON public.warehouses;
 CREATE POLICY "Sales Executive can read warehouses"
   ON public.warehouses FOR SELECT
   USING (EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role IN ('admin', 'sales_manager', 'sales_exec')));
@@ -198,14 +226,17 @@ CREATE POLICY "Sales Executive can read warehouses"
 -- ============================================================
 ALTER TABLE public.warehouse_stock ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Admin can manage all warehouse stock" ON public.warehouse_stock;
 CREATE POLICY "Admin can manage all warehouse stock"
   ON public.warehouse_stock FOR ALL
   USING (EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'admin'));
 
+DROP POLICY IF EXISTS "Operations can manage warehouse stock" ON public.warehouse_stock;
 CREATE POLICY "Operations can manage warehouse stock"
   ON public.warehouse_stock FOR ALL
   USING (EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role IN ('admin', 'operations')));
 
+DROP POLICY IF EXISTS "Sales can read warehouse stock" ON public.warehouse_stock;
 CREATE POLICY "Sales can read warehouse stock"
   ON public.warehouse_stock FOR SELECT
   USING (EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role IN ('admin', 'sales_manager', 'sales_exec', 'operations')));
@@ -215,14 +246,17 @@ CREATE POLICY "Sales can read warehouse stock"
 -- ============================================================
 ALTER TABLE public.stock_movements ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Admin can manage all stock movements" ON public.stock_movements;
 CREATE POLICY "Admin can manage all stock movements"
   ON public.stock_movements FOR ALL
   USING (EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'admin'));
 
+DROP POLICY IF EXISTS "Operations can manage stock movements" ON public.stock_movements;
 CREATE POLICY "Operations can manage stock movements"
   ON public.stock_movements FOR ALL
   USING (EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role IN ('admin', 'operations')));
 
+DROP POLICY IF EXISTS "Sales can read stock movements" ON public.stock_movements;
 CREATE POLICY "Sales can read stock movements"
   ON public.stock_movements FOR SELECT
   USING (EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role IN ('admin', 'sales_manager', 'sales_exec', 'operations')));
@@ -232,17 +266,20 @@ CREATE POLICY "Sales can read stock movements"
 -- ============================================================
 ALTER TABLE public.meetings ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Admin can manage all meetings" ON public.meetings;
 CREATE POLICY "Admin can manage all meetings"
   ON public.meetings FOR ALL
   USING (EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'admin'));
 
+DROP POLICY IF EXISTS "Sales Manager can manage team meetings" ON public.meetings;
 CREATE POLICY "Sales Manager can manage team meetings"
   ON public.meetings FOR ALL
   USING (
     EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role IN ('admin', 'sales_manager'))
-    OR EXISTS (SELECT 1 FROM public.user_teams ut JOIN public.users u ON ut.user_id = auth.uid() WHERE u.role = 'sales_manager' AND ut.team_id = meetings.team_id)
+    OR meetings.assigned_to = auth.uid()
   );
 
+DROP POLICY IF EXISTS "Sales Executive can manage own meetings" ON public.meetings;
 CREATE POLICY "Sales Executive can manage own meetings"
   ON public.meetings FOR ALL
   USING (
@@ -250,12 +287,14 @@ CREATE POLICY "Sales Executive can manage own meetings"
     OR EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role IN ('admin', 'sales_manager'))
   );
 
+DROP POLICY IF EXISTS "ISO Consultant can manage assigned meetings" ON public.meetings;
 CREATE POLICY "ISO Consultant can manage assigned meetings"
   ON public.meetings FOR ALL
   USING (
     EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'admin')
   );
 
+DROP POLICY IF EXISTS "All authenticated users can read meetings" ON public.meetings;
 CREATE POLICY "All authenticated users can read meetings"
   ON public.meetings FOR SELECT
   USING (auth.uid() IS NOT NULL);
@@ -265,16 +304,19 @@ CREATE POLICY "All authenticated users can read meetings"
 -- ============================================================
 ALTER TABLE public.audit_logs ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Admin can read all audit logs" ON public.audit_logs;
 CREATE POLICY "Admin can read all audit logs"
   ON public.audit_logs FOR SELECT
   USING (EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'admin'));
 
+DROP POLICY IF EXISTS "Sales Manager can read team audit logs" ON public.audit_logs;
 CREATE POLICY "Sales Manager can read team audit logs"
   ON public.audit_logs FOR SELECT
   USING (
     EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'sales_manager')
   );
 
+DROP POLICY IF EXISTS "Users can read own audit logs" ON public.audit_logs;
 CREATE POLICY "Users can read own audit logs"
   ON public.audit_logs FOR SELECT
   USING (audit_logs.user_id = auth.uid());
