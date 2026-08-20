@@ -40,7 +40,7 @@ const krayinTheme = {
 // Krayin-inspired dark theme
 const darkTheme = {
   palette: {
-    mode: "dark",
+    mode: "dark" as "dark",
     primary: { main: "#3b82f1", contrastText: "#ffffff" },
     secondary: { main: "#6366f1", contrastText: "#ffffff" },
     background: {

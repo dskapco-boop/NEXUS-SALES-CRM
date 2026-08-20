@@ -1,66 +1,8 @@
-import { Card, CardContent, CardHeader, Typography, Grid, Paper } from "@mui/material";
-import { useListContext, useNotify, List, Datagrid, TextField, NumberField, DateField, ReferenceField } from "react-admin";
-import { useEffect, useState } from "react";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, } from "recharts";
+import { Card, CardContent, CardHeader, Typography, Grid, Paper, Box } from "@mui/material";
+import { List, Datagrid, TextField, NumberField, DateField, ReferenceField } from "react-admin";
 
-// Krayin-style dashboard: metric cards + charts at the top, tables below
-const data = [
-  { name: "Jan", leads: 4, won: 2, lost: 1 },
-  { name: "Feb", leads: 7, won: 3, lost: 2 },
-  { name: "Mar", leads: 5, won: 4, lost: 1 },
-  { name: "Apr", leads: 10, won: 6, lost: 2 },
-  { name: "May", leads: 8, won: 5, lost: 3 },
-  { name: "Jun", leads: 6, won: 4, lost: 2 },
-  { name: "Jul", leads: 12, won: 7, lost: 3 },
-  { name: "Aug", leads: 18, won: 10, lost: 5 },
-  { name: "Sep", leads: 9, won: 6, lost: 2 },
-  { name: "Oct", leads: 7, won: 5, lost: 3 },
-  { name: "Nov", leads: 11, won: 8, lost: 1 },
-  { name: "Dec", leads: 14, won: 9, lost: 4 },
-];
-
-const revenueData = [
-  { name: "Existing Business", value: 2290000 },
-  { name: "New Business", value: 320000 },
-  { name: "Service Business", value: 150000 },
-];
-
-const leadSourceData = [
-  { name: "Website", value: 45 },
-  { name: "Email", value: 25 },
-  { name: "Referral", value: 18 },
-  { name: "Cold Call", value: 12 },
-};
-
-const leadSourceColors = ["#a78bfa", "#f472b6", "#2dd36f", "#fb92b2"];
-const revenueColors = ["#a78bfa", "#f472b6", "#2dd36f"];
-
-const MetricCard = ({ title, value, subtitle, color = "default" }: any) => {
-  const colorMap = {
-    default: "#6b7280",
-    success: "#22c55e",
-    warning: "#f59e0b",
-    info: "#3b82f1",
-  };
-
-  return (
-    <Card sx={{ flexGrow: 1, minWidth: 120, backgroundColor: "#fff" }}>
-      <CardContent>
-        <Typography variant="caption" color="text.secondary" display="block">
-          {title}
-        </Typography>
-        <Typography variant="h5" sx={{ fontWeight: 700, color: colorMap[color as keyof typeof colorMap] }}>
-          {value}
-        </Typography>
-        {subtitle && (
-          <Typography variant="caption" color="text.secondary">
-            {subtitle}
-          </Typography>
-        )}
-      </CardContent>
-    </Card>
-  );
-};
+// Krayin-style dashboard: metric cards + data tables
+// Using simple metrics instead of charts (recharts not installed)
 
 export const Dashboard = () => {
   return (
@@ -78,47 +20,65 @@ export const Dashboard = () => {
           </Grid>
         </Grid>
 
-        {/* Charts Row */}
+        {/* Pipeline Summary */}
         <Grid container spacing={3} sx={{ marginBottom: 2 }}>
-          <Grid item xs={12} md={8}>
+          <Grid item xs={12} md={3}>
+            <Paper sx={{ p: 2, backgroundColor: "#fff", textAlign: "center" }}>
+              <Typography variant="caption" color="text.secondary">New</Typography>
+              <Typography variant="h4" sx={{ fontWeight: 700, color: "#3b82f1" }}>6</Typography>
+              <Typography variant="body2" color="text.secondary">$1,270,000</Typography>
+            </Paper>
+          </Grid>
+          <Grid item xs={12} md={3}>
+            <Paper sx={{ p: 2, backgroundColor: "#fff", textAlign: "center" }}>
+              <Typography variant="caption" color="text.secondary">Follow Up</Typography>
+              <Typography variant="h4" sx={{ fontWeight: 700, color: "#f59e0b" }}>3</Typography>
+              <Typography variant="body2" color="text.secondary">$144,000</Typography>
+            </Paper>
+          </Grid>
+          <Grid item xs={12} md={3}>
+            <Paper sx={{ p: 2, backgroundColor: "#fff", textAlign: "center" }}>
+              <Typography variant="caption" color="text.secondary">Prospect</Typography>
+              <Typography variant="h4" sx={{ fontWeight: 700, color: "#a78bfa" }}>3</Typography>
+              <Typography variant="body2" color="text.secondary">$260,000</Typography>
+            </Paper>
+          </Grid>
+          <Grid item xs={12} md={3}>
+            <Paper sx={{ p: 2, backgroundColor: "#fff", textAlign: "center" }}>
+              <Typography variant="caption" color="text.secondary">Negotiation</Typography>
+              <Typography variant="h4" sx={{ fontWeight: 700, color: "#8b5cf6" }}>2</Typography>
+              <Typography variant="body2" color="text.secondary">$160,000</Typography>
+            </Paper>
+          </Grid>
+        </Grid>
+
+        {/* Revenue Breakdown */}
+        <Grid container spacing={3} sx={{ marginBottom: 2 }}>
+          <Grid item xs={12} md={4}>
             <Paper sx={{ p: 2, backgroundColor: "#fff" }}>
-              <Typography variant="subtitle1" gutterBottom>Leads Over Time</Typography>
-              <ResponsiveContainer width="100%" height={200}>
-                <BarChart data={data}>
-                  <XAxis dataKey="name" />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
-                  <Bar dataKey="leads" fill="#a78bfa" name="Total Leads" />
-                  <Bar dataKey="won" fill="#22c55e" name="Won" />
-                  <Bar dataKey="lost" fill="#ef4444" name="Lost" />
-                </BarChart>
-              </ResponsiveContainer>
+              <Typography variant="subtitle2" color="text.secondary">Won Revenue</Typography>
+              <Typography variant="h5" sx={{ fontWeight: 700, color: "#22c55e" }}>$2,760,000</Typography>
+              <Box sx={{ mt: 1, height: 8, backgroundColor: "#e5e7eb", borderRadius: 4, overflow: "hidden" }}>
+                <Box sx={{ width: "75%", height: "100%", backgroundColor: "#22c55e", borderRadius: 4 }} />
+              </Box>
             </Paper>
           </Grid>
           <Grid item xs={12} md={4}>
             <Paper sx={{ p: 2, backgroundColor: "#fff" }}>
-              <Typography variant="subtitle1" gutterBottom>Revenue By Types</Typography>
-              <ResponsiveContainer width="100%" height={150}>
-                <PieChart>
-                  <Pie data={revenueData} dataKey="value" cx="50%" cy="50%" outerRadius={60} label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}>
-                    {revenueData.map((_, i) => <Cell key={`cell-${i}`} fill={revenueColors[i % revenueColors.length]} />)}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
+              <Typography variant="subtitle2" color="text.secondary">Lost Revenue</Typography>
+              <Typography variant="h5" sx={{ fontWeight: 700, color: "#ef4444" }}>$70,000</Typography>
+              <Box sx={{ mt: 1, height: 8, backgroundColor: "#e5e7eb", borderRadius: 4, overflow: "hidden" }}>
+                <Box sx={{ width: "3%", height: "100%", backgroundColor: "#ef4444", borderRadius: 4 }} />
+              </Box>
             </Paper>
-            <br />
-            <Paper sx={{ p: 2, backgroundColor: "#fff", marginTop: 2 }}>
-              <Typography variant="subtitle1" gutterBottom>Lead Sources</Typography>
-              <ResponsiveContainer width="100%" height={150}>
-                <PieChart>
-                  <Pie data={leadSourceData} dataKey="value" cx="50%" cy="50%" outerRadius={60} label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}>
-                    {leadSourceData.map((_, i) => <Cell key={`cell-${i}`} fill={leadSourceColors[i % leadSourceColors.length]} />)}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
+          </Grid>
+          <Grid item xs={12} md={4}>
+            <Paper sx={{ p: 2, backgroundColor: "#fff" }}>
+              <Typography variant="subtitle2" color="text.secondary">Conversion Rate</Typography>
+              <Typography variant="h5" sx={{ fontWeight: 700, color: "#3b82f1" }}>65%</Typography>
+              <Box sx={{ mt: 1, height: 8, backgroundColor: "#e5e7eb", borderRadius: 4, overflow: "hidden" }}>
+                <Box sx={{ width: "65%", height: "100%", backgroundColor: "#3b82f1", borderRadius: 4 }} />
+              </Box>
             </Paper>
           </Grid>
         </Grid>
@@ -154,6 +114,37 @@ export const Dashboard = () => {
             </Paper>
           </Grid>
         </Grid>
+      </CardContent>
+    </Card>
+  );
+};
+
+const MetricCard = ({ title, value, subtitle, color = "default" }: any) => {
+  const colorMap: Record<string, string> = {
+    default: "#6b7280",
+    success: "#22c55e",
+    warning: "#f59e0b",
+    info: "#3b82f1",
+    error: "#ef4444",
+  };
+
+  return (
+    <Card sx={{ flexGrow: 1, minWidth: 120, backgroundColor: "#fff" }}>
+      <CardContent>
+        <Typography variant="caption" color="text.secondary" display="block">
+          {title}
+        </Typography>
+        <Typography
+          variant="h5"
+          sx={{ fontWeight: 700, color: colorMap[color as keyof typeof colorMap] }}
+        >
+          {value}
+        </Typography>
+        {subtitle && (
+          <Typography variant="caption" color="text.secondary">
+            {subtitle}
+          </Typography>
+        )}
       </CardContent>
     </Card>
   );
