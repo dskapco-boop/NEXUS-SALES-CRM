@@ -42,10 +42,7 @@ export const LeadsList = (props: any) => {
         <TextField source="company" />
         <TextField source="status" />
         <TextField source="source" />
-        <NumberField
-          source="score"
-          options={{ style: "number" }}
-        />
+        <NumberField source="score" />
         <DateField source="created_at" showTime />
       </Datagrid>
     </List>
