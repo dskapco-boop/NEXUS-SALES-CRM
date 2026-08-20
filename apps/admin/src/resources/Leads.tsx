@@ -27,13 +27,13 @@ import { StatusField } from "../components/StatusBadge";
 import { KanbanBoard } from "./KanbanBoard";
 import { Box } from "@mui/material";
 
-// Pipeline stages matching Krayin's lead pipeline
+// Krayin-style pipeline stages: New → Follow Up → Prospect → Negotiation → Won → Lost
 const PIPELINE_STAGES = [
   { id: "new", label: "New", color: "#3b82f1" },
-  { id: "contacted", label: "Contacted", color: "#a78bfa" },
-  { id: "qualified", label: "Qualified", color: "#22c55e" },
-  { id: "unqualified", label: "Unqualified", color: "#f59e0b" },
-  { id: "converted", label: "Converted", color: "#22c55e" },
+  { id: "follow_up", label: "Follow Up", color: "#a78bfa" },
+  { id: "prospect", label: "Prospect", color: "#f59e0b" },
+  { id: "negotiation", label: "Negotiation", color: "#8b5cf6" },
+  { id: "won", label: "Won", color: "#22c55e" },
   { id: "lost", label: "Lost", color: "#ef4444" },
 ];
 
@@ -50,147 +50,6 @@ const LeadsTopToolbar = ({ showKanban, setShowKanban }: any) => (
     />
   </TopToolbar>
 );
-
-// Table view for Leads
-const LeadsTableView = () => (
-  <Datagrid rowClick="edit" bulkActionButtons={false}>
-    <TextField source="company" />
-    <TextField source="first_name" />
-    <TextField source="last_name" />
-    <NumberField source="score" />
-    <StatusField source="status" type="lead_status" />
-    <DateField source="created_at" showTime />
-  </Datagrid>
-);
-
-// Lead card component for Kanban - matches Krayin's card style
-const LeadCard = ({ lead, onClick }: any) => {
-  const initials = `${lead.first_name?.charAt(0) || ""}${lead.last_name?.charAt(0) || ""}`.toUpperCase() || "??";
-  const avatarBg = `hsl(${Math.random() * 360}, 70%, 80%)`;
-
-  // Status dot colors
-  const statusColors: Record<string, string> = {
-    new: "#3b82f1",
-    contacted: "#a78bfa",
-    qualified: "#22c55e",
-    unqualified: "#f59e0b",
-    converted: "#22c55e",
-    lost: "#ef4444",
-  };
-
-  const urgencyColors: Record<string, string> = {
-    urgent: "#ef4444",
-    high: "#f97316",
-    medium: "#f59e0b",
-    low: "#22c55e",
-  };
-
-  const urgencyLabels: Record<string, string> = {
-    urgent: "Urgent",
-    high: "High",
-    medium: "Medium",
-    low: "Low",
-  };
-
-  const statusColor = statusColors[lead.status] || "#6b7280";
-  const urgency = lead.custom_fields?.urgency;
-  const urgencyColor = urgencyColors[urgency] || "#6b7280";
-  const isUrgent = urgency === "urgent";
-
-  return (
-    <div
-      onClick={onClick}
-      style={{
-        backgroundColor: "#fff",
-        border: isUrgent ? "2px solid #ef4444" : "1px solid #e5e7eb",
-        borderRadius: 8,
-        padding: 12,
-        marginBottom: 12,
-        cursor: "pointer",
-        boxShadow: isUrgent ? "0 2px 4px rgba(239, 68, 68, 0.2)" : "0 1px 3px rgba(0,0,0,0.1)",
-      }}
-    >
-      {/* Header row: avatar + name + urgency badge */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <div
-            style={{
-              width: 32,
-              height: 32,
-              borderRadius: "50%",
-              backgroundColor: avatarBg,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: 12,
-              fontWeight: 600,
-              color: "#374151",
-            }}
-          >
-            {initials}
-          </div>
-          <div>
-            <div style={{ fontWeight: 600, fontSize: 14 }}>{lead.company}</div>
-            <div style={{ fontSize: 12, color: "#6b7280" }}>
-              {lead.first_name} {lead.last_name}
-              {lead.job_title && ` • ${lead.job_title}`}
-            </div>
-          </div>
-        </div>
-
-        {isUrgent && (
-          <div
-            style={{
-              backgroundColor: urgencyColor,
-              color: "white",
-              fontSize: 10,
-              fontWeight: 700,
-              padding: "2px 8px",
-              borderRadius: 4,
-              whiteSpace: "nowrap",
-            }}
-          >
-            {urgencyLabels[urgency]}
-          </div>
-        )}
-      </div>
-
-      {/* Status section */}
-      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
-        <div style={{ width: 8, height: 8, borderRadius: "50%", backgroundColor: statusColor }} />
-        <span style={{ fontSize: 12, fontWeight: 600 }}>{PIPELINE_STAGES.find((s) => s.id === lead.status)?.label || lead.status}</span>
-      </div>
-
-      {/* Metadata */}
-      <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 6 }}>
-        {lead.source && <div>📊 {lead.source.replace("_", " ")}</div>}
-        {lead.score !== undefined && <div>🎯 AI Score: {lead.score}/100</div>}
-      </div>
-
-      {/* Tags */}
-      {lead.custom_fields?.iso_standards && (
-        <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginTop: 4 }}>
-          <span
-            style={{
-              fontSize: 10,
-              backgroundColor: "#f3f4f6",
-              color: "#4b5563",
-              padding: "2px 6px",
-              borderRadius: 4,
-            }}
-          >
-            ISO {lead.custom_fields.iso_standards}
-          </span>
-        </div>
-      )}
-
-      {/* Created date */}
-      <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 6, textAlign: "right" }}>
-        {new Date(lead.created_at).toLocaleDateString()}
-      </div>
-    </div>
-  );
-};
 
 // Main Leads List with Kanban/Table toggle
 export const LeadsList = (props: any) => {

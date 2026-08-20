@@ -2,65 +2,81 @@ import React from "react";
 import { useRecordContext } from "react-admin";
 import { useTheme } from "@mui/material";
 
-// Lead card component for Kanban view - matches Krayin's card style
-export const LeadCard = ({ lead, onClick }: any) => {
-  const { palette } = useTheme();
+// Badge configurations matching Krayin's style
+const BADGE_CONFIGS: Record<string, { label: string; color: string; bg: string }> = {
+  urgent: { label: "Urgent Sale", color: "#ef4444", bg: "rgba(239, 68, 68, 0.1)" },
+  super_priority: { label: "Super Priority", color: "#ef4444", bg: "rgba(239, 68, 68, 0.1)" },
+  immediate_action: { label: "Immediate Action", color: "#ef4444", bg: "rgba(239, 68, 68, 0.1)" },
+  vip: { label: "VIP Client", color: "#22c55e", bg: "rgba(34, 197, 94, 0.1)" },
+  requirement: { label: "Requirement", color: "#3b82f1", bg: "rgba(59, 130, 246, 0.1)" },
+  enquiry: { label: "Enquiry", color: "#f59e0b", bg: "rgba(245, 152, 26, 0.1)" },
+  quote: { label: "Quote", color: "#f59e0b", bg: "rgba(245, 152, 26, 0.1)" },
+};
 
-  // Status dot colors
-  const statusColors: Record<string, string> = {
-    new: "#3b82f1",
-    contacted: "#a78bfa",
-    qualified: "#22c55e",
-    unqualified: "#f59e0b",
-    converted: "#22c55e",
-    lost: "#ef4444",
-  };
+// Urgency label mappings
+const URGENCY_LABELS: Record<string, string> = {
+  urgent: "Urgent Sale",
+  high: "High Priority",
+  medium: "Medium",
+  low: "Low",
+};
 
-  const urgencyColors: Record<string, string> = {
-    urgent: "#ef4444",
-    high: "#f97316",
-    medium: "#f59e0b",
-    low: "#22c55e",
-  };
+const URGENCY_COLORS: Record<string, string> = {
+  urgent: "#ef4444",
+  high: "#f97316",
+  medium: "#f59e0b",
+  low: "#22c55e",
+};
 
-  const urgencyLabels: Record<string, string> = {
-    urgent: "Urgent",
-    high: "High",
-    medium: "Medium",
-    low: "Low",
-  };
-
+// Lead card component for Kanban - matches Krayin's card style
+export const LeadCard = ({ lead, stage, onClick }: any) => {
   // Generate avatar initials
   const initials = `${lead.first_name?.charAt(0) || ""}${lead.last_name?.charAt(0) || ""}`.toUpperCase() || "??";
   const avatarBg = `hsl(${Math.random() * 360}, 70%, 80%)`;
 
-  const statusColor = statusColors[lead.status] || "#6b7280";
+  const statusColor = stage?.color || "#6b7280";
   const urgency = lead.custom_fields?.urgency;
-  const urgencyColor = urgencyColors[urgency] || "#6b7280";
+  const urgencyColor = URGENCY_COLORS[urgency] || "#6b7280";
   const isUrgent = urgency === "urgent";
 
-  const statusLabels: Record<string, string> = {
-    new: "New",
-    contacted: "Contacted",
-    qualified: "Qualified",
-    unqualified: "Unqualified",
-    converted: "Converted",
-    lost: "Lost",
+  // Get tags from lead data
+  const tags = lead.custom_fields?.iso_standards
+    ? [lead.custom_fields.iso_standards]
+    : lead.tags
+    ? Array.isArray(lead.tags)
+      ? lead.tags
+      : lead.tags.split(",")
+    : [];
+
+  // Get badge from custom_fields
+  const badgeKey = lead.custom_fields?.badge || lead.custom_fields?.urgency;
+  const badgeConfig = badgeKey ? BADGE_CONFIGS[badgeKey] : null;
+
+  const cardStyle: React.CSSProperties = {
+    backgroundColor: "#fff",
+    border: isUrgent ? "2px solid #ef4444" : "1px solid #e5e7eb",
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 12,
+    cursor: "pointer",
+    boxShadow: isUrgent ? "0 2px 4px rgba(239, 68, 68, 0.2)" : "0 1px 3px rgba(0,0,0,0.1)",
+    transition: "transform 0.1s, box-shadow 0.1s",
   };
+
+  const cardHoverStyle = {
+    ...cardStyle,
+    transform: "translateY(-1px)",
+    boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
+  };
+
+  const [isHovered, setIsHovered] = React.useState(false);
 
   return (
     <div
       onClick={onClick}
-      style={{
-        backgroundColor: "#fff",
-        border: isUrgent ? "2px solid #ef4444" : "1px solid #e5e7eb",
-        borderRadius: 8,
-        padding: 12,
-        marginBottom: 12,
-        cursor: "pointer",
-        boxShadow: isUrgent ? "0 2px 4px rgba(239, 68, 68, 0.2)" : "0 1px 3px rgba(0,0,0,0.1)",
-        transition: "transform 0.1s, box-shadow 0.1s",
-      }}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      style={isHovered ? cardHoverStyle : cardStyle}
     >
       {/* Header row: avatar + name + urgency badge */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
@@ -82,7 +98,9 @@ export const LeadCard = ({ lead, onClick }: any) => {
             {initials}
           </div>
           <div>
-            <div style={{ fontWeight: 600, fontSize: 14 }}>{lead.company || "Unknown Company"}</div>
+            <div style={{ fontWeight: 600, fontSize: 14 }}>
+              {lead.company || "Unknown Company"}
+            </div>
             <div style={{ fontSize: 12, color: "#6b7280" }}>
               {lead.first_name} {lead.last_name}
               {lead.job_title && ` • ${lead.job_title}`}
@@ -102,45 +120,67 @@ export const LeadCard = ({ lead, onClick }: any) => {
               whiteSpace: "nowrap",
             }}
           >
-            {urgencyLabels[urgency]}
+            {URGENCY_LABELS[urgency]}
           </div>
         )}
       </div>
 
-      {/* Status section */}
+      {/* Status section - subject/requirement */}
       <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
-        <div
-          style={{
-            width: 8,
-            height: 8,
-            borderRadius: "50%",
-            backgroundColor: statusColor,
-          }}
-        />
+        <div style={{ width: 8, height: 8, borderRadius: "50%", backgroundColor: statusColor }} />
         <span style={{ fontSize: 12, fontWeight: 600 }}>
-          {statusLabels[lead.status] || lead.status}
+          {stage?.label || lead.status}
         </span>
       </div>
+
+      {/* Notes/subject line */}
+      {lead.notes && (
+        <div style={{ fontSize: 12, color: "#374151", marginBottom: 8, fontWeight: 500 }}>
+          {lead.notes.length > 60 ? `${lead.notes.substring(0, 60)}...` : lead.notes}
+        </div>
+      )}
 
       {/* Metadata */}
       <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 6 }}>
         {lead.source && <div>📊 {lead.source.replace("_", " ")}</div>}
         {lead.score !== undefined && lead.score !== null && <div>🎯 AI Score: {lead.score}/100</div>}
+        {lead.email && <div>✉️ {lead.email}</div>}
       </div>
 
       {/* Tags */}
-      {lead.custom_fields?.iso_standards && (
-        <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginTop: 6 }}>
+      {tags && tags.length > 0 && (
+        <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginTop: 6, marginBottom: 6 }}>
+          {tags.slice(0, 3).map((tag: string, i: number) => (
+            <span
+              key={i}
+              style={{
+                fontSize: 10,
+                backgroundColor: "#f3f4f6",
+                color: "#4b5563",
+                padding: "2px 6px",
+                borderRadius: 4,
+              }}
+            >
+              {tag.trim()}
+            </span>
+          ))}
+        </div>
+      )}
+
+      {/* Badge (e.g., VIP Client, Super Priority) */}
+      {badgeConfig && !isUrgent && (
+        <div style={{ marginTop: 4, marginBottom: 6 }}>
           <span
             style={{
               fontSize: 10,
-              backgroundColor: "#f3f4f6",
-              color: "#4b5563",
+              backgroundColor: badgeConfig.bg,
+              color: badgeConfig.color,
               padding: "2px 6px",
               borderRadius: 4,
+              fontWeight: 600,
             }}
           >
-            ISO {lead.custom_fields.iso_standards}
+            {badgeConfig.label}
           </span>
         </div>
       )}

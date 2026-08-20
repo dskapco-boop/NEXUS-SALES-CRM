@@ -3,14 +3,22 @@ import { Chip } from "@mui/material";
 
 // Status configurations with Krayin-style colors
 const STATUS_CONFIGS: Record<string, Record<string, { label: string; color: string }>> = {
+  // Lead status - Krayin pipeline: New, Follow Up, Prospect, Negotiation, Won, Lost
   lead_status: {
-    new: { label: "New", color: "#3b82f1" },
-    contacted: { label: "Contacted", color: "#a78bfa" },
-    qualified: { label: "Qualified", color: "#22c55e" },
-    unqualified: { label: "Unqualified", color: "#f59e0b" },
+    new: { label: "New", color: "#3b82f1" },           // blue
+    followed_up: { label: "Follow Up", color: "#a78bfa" }, // purple
+    follow_up: { label: "Follow Up", color: "#a78bfa" },
+    prospect: { label: "Prospect", color: "#f59e0b" },  // amber
+    qualified: { label: "Qualified", color: "#8b5cf6" }, // violet
+    negotiation: { label: "Negotiation", color: "#8b5cf6" },
+    won: { label: "Won", color: "#22c55e" },           // green
     converted: { label: "Converted", color: "#22c55e" },
-    lost: { label: "Lost", color: "#ef4444" },
+    lost: { label: "Lost", color: "#ef4444" },         // red
+    unqualified: { label: "Unqualified", color: "#f59e0b" },
+    // Legacy statuses (fallback)
+    contacted: { label: "Contacted", color: "#a78bfa" },
   },
+  // Opportunity stage
   opportunity_stage: {
     prospecting: { label: "Prospecting", color: "#6b7280" },
     qualification: { label: "Qualification", color: "#3b82f1" },
@@ -19,6 +27,7 @@ const STATUS_CONFIGS: Record<string, Record<string, { label: string; color: stri
     closed_won: { label: "Closed Won", color: "#22c55e" },
     closed_lost: { label: "Closed Lost", color: "#ef4444" },
   },
+  // Quote status
   quote_status: {
     draft: { label: "Draft", color: "#6b7280" },
     sent: { label: "Sent", color: "#3b82f1" },
@@ -28,11 +37,13 @@ const STATUS_CONFIGS: Record<string, Record<string, { label: string; color: stri
     expired: { label: "Expired", color: "#f59e0b" },
     revised: { label: "Revised", color: "#6b7280" },
   },
+  // Quote approval status
   quote_approval: {
     pending: { label: "Pending", color: "#f59e0b" },
     approved: { label: "Approved", color: "#22c55e" },
     rejected: { label: "Rejected", color: "#ef4444" },
   },
+  // Sales order status
   order_status: {
     draft: { label: "Draft", color: "#6b7280" },
     confirmed: { label: "Confirmed", color: "#3b82f1" },
@@ -41,6 +52,7 @@ const STATUS_CONFIGS: Record<string, Record<string, { label: string; color: stri
     delivered: { label: "Delivered", color: "#22c55e" },
     cancelled: { label: "Cancelled", color: "#ef4444" },
   },
+  // Invoice status
   invoice_status: {
     draft: { label: "Draft", color: "#6b7280" },
     sent: { label: "Sent", color: "#3b82f1" },
