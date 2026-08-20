@@ -18,6 +18,7 @@ import {
   useListContext,
 } from "react-admin";
 import { NumberField, ReferenceField } from "react-admin";
+import { StatusField } from "../components/StatusBadge";
 
 // Quotations resource following PRD Section 7.1
 export const QuotationsList = (props: any) => (
@@ -30,12 +31,12 @@ export const QuotationsList = (props: any) => (
       <ReferenceField source="opportunity_id" reference="opportunities" link={false}>
         <TextField source="name" />
       </ReferenceField>
-            <TextField source="currency" />
-            <TextField source="status" />
+      <TextField source="currency" />
+      <StatusField source="status" type="quote_status" />
       <NumberField source="total_amount" options={{ style: "currency", currency: "AED" }} />
       <DateField source="quote_date" />
       <DateField source="valid_until" />
-            <TextField source="approval_status" />
+      <StatusField source="approval_status" type="quote_approval" />
       <DateField source="sent_at" />
       <DateField source="accepted_at" />
     </Datagrid>

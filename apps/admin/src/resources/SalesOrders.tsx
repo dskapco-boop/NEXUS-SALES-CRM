@@ -16,6 +16,7 @@ import {
   DeleteButton,
   NumberField,
 } from "react-admin";
+import { StatusField } from "../components/StatusBadge";
 
 // Sales Orders resource following PRD Section 7.2
 export const SalesOrdersList = (props: any) => (
@@ -28,7 +29,7 @@ export const SalesOrdersList = (props: any) => (
       <ReferenceField source="quote_id" reference="quotations" link={false}>
         <TextField source="quote_number" />
       </ReferenceField>
-            <TextField source="status" />
+      <StatusField source="status" type="order_status" />
       <NumberField source="total_amount" options={{ style: "currency", currency: "AED" }} />
       <DateField source="order_date" />
       <DateField source="expected_ship_date" />

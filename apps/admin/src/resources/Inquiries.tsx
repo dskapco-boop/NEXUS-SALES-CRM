@@ -17,6 +17,7 @@ import {
   DeleteButton,
   NumberField,
 } from "react-admin";
+import { StatusField } from "../components/StatusBadge";
 
 // Inquiries/Opportunities resource following PRD Section 6.2
 // Aligned with database schema (opportunities table)
@@ -27,9 +28,9 @@ export const InquiriesList = (props: any) => (
       <ReferenceField source="account_id" reference="accounts" link={false}>
         <TextField source="name" />
       </ReferenceField>
-            <TextField source="stage" />
+      <StatusField source="stage" type="opportunity_stage" />
       <NumberField source="amount" options={{ style: "currency", currency: "AED" }} />
-            <TextField source="currency" />
+      <TextField source="currency" />
       <DateField source="expected_close_date" />
       <DateField source="created_at" showTime />
     </Datagrid>

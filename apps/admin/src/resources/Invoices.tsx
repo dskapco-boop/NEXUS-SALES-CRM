@@ -16,6 +16,7 @@ import {
   SaveButton,
   DeleteButton,
 } from "react-admin";
+import { StatusField } from "../components/StatusBadge";
 
 // Invoices resource following PRD Section 8.3
 export const InvoicesList = (props: any) => (
@@ -29,7 +30,7 @@ export const InvoicesList = (props: any) => (
         <TextField source="order_number" />
       </ReferenceField>
       <TextField source="currency" />
-      <TextField source="status" />
+      <StatusField source="status" type="invoice_status" />
       <NumberField source="total_amount" options={{ style: "currency", currency: "AED" }} />
       <NumberField source="amount_due" options={{ style: "currency", currency: "AED" }} />
       <DateField source="invoice_date" />

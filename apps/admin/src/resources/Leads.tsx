@@ -14,35 +14,27 @@ import {
   useNotify,
   useRefresh,
 } from "react-admin";
-import { Bot } from "lucide-react";
-import { aiService } from "@nexus-crm/crm-core";
-import { getSupabaseClient } from "@nexus-crm/api";
+import { StatusField } from "../components/StatusBadge";
 
-// Helper: status choice mapping for display
-const statusChoices = {
-  new: "New",
-  contacted: "Contacted",
-  qualified: "Qualified",
-  unqualified: "Unqualified",
-  converted: "Converted",
-  lost: "Lost",
-};
+// Lead pipeline stages in order (for Kanban view)
+const PIPELINE_STAGES = [
+  "new",
+  "contacted",
+  "qualified",
+  "unqualified",
+  "converted",
+  "lost",
+];
 
 export const LeadsList = (props: any) => {
-  const notify = useNotify();
-  const refresh = useRefresh();
-
   return (
     <List {...props} title="Leads" exporter={false}>
       <Datagrid rowClick="edit" bulkActionButtons={false}>
+        <TextField source="company" />
         <TextField source="first_name" />
         <TextField source="last_name" />
-        <EmailField source="email" />
-        <TextField source="phone" />
-        <TextField source="company" />
-        <TextField source="status" />
-        <TextField source="source" />
         <NumberField source="score" />
+        <StatusField source="status" type="lead_status" />
         <DateField source="created_at" showTime />
       </Datagrid>
     </List>
