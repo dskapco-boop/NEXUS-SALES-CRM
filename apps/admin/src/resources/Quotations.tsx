@@ -17,7 +17,7 @@ import {
   useRecordContext,
   useListContext,
 } from "react-admin";
-import { NumberField } from "react-admin";
+import { NumberField, ReferenceField } from "react-admin";
 
 // Quotations resource following PRD Section 7.1
 export const QuotationsList = (props: any) => (
