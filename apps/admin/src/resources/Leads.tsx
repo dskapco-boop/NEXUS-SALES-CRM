@@ -16,7 +16,6 @@ import {
   useRefresh,
   TopToolbar,
   CreateButton,
-  FilterButton,
   ExportButton,
   Button,
   useListContext,
@@ -40,7 +39,6 @@ const PIPELINE_STAGES = [
 // Custom toolbar with view toggle (Table / Kanban)
 const LeadsTopToolbar = ({ showKanban, setShowKanban }: any) => (
   <TopToolbar>
-    <FilterButton />
     <CreateButton />
     <ExportButton />
     <Button
