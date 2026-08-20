@@ -18,6 +18,16 @@ import { Bot } from "lucide-react";
 import { aiService } from "@nexus-crm/crm-core";
 import { getSupabaseClient } from "@nexus-crm/api";
 
+// Helper: status choice mapping for display
+const statusChoices = {
+  new: "New",
+  contacted: "Contacted",
+  qualified: "Qualified",
+  unqualified: "Unqualified",
+  converted: "Converted",
+  lost: "Lost",
+};
+
 export const LeadsList = (props: any) => {
   const notify = useNotify();
   const refresh = useRefresh();
@@ -30,35 +40,8 @@ export const LeadsList = (props: any) => {
         <EmailField source="email" />
         <TextField source="phone" />
         <TextField source="company" />
-        <SelectInput
-          source="status"
-          choices={[
-            { id: "new", name: "New" },
-            { id: "contacted", name: "Contacted" },
-            { id: "qualified", name: "Qualified" },
-            { id: "unqualified", name: "Unqualified" },
-            { id: "converted", name: "Converted" },
-            { id: "lost", name: "Lost" },
-          ]}
-          optionText={(choice) => choice.name}
-          optionValue="id"
-          sortable={false}
-        />
-        <SelectInput
-          source="source"
-          choices={[
-            { id: "website", name: "Website" },
-            { id: "referral", name: "Referral" },
-            { id: "cold_call", name: "Cold Call" },
-            { id: "email", name: "Email" },
-            { id: "social", name: "Social Media" },
-            { id: "event", name: "Event" },
-            { id: "other", name: "Other" },
-          ]}
-          optionText={(choice) => choice.name}
-          optionValue="id"
-          sortable={false}
-        />
+        <TextField source="status" />
+        <TextField source="source" />
         <NumberField
           source="score"
           options={{ style: "number" }}

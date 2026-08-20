@@ -9,6 +9,7 @@ import {
   TextInput,
   SelectInput,
   ReferenceInput,
+  ReferenceField,
   NumberInput,
   DateInput,
   Toolbar,
@@ -23,36 +24,12 @@ export const InquiriesList = (props: any) => (
   <List {...props} title="Inquiries / Opportunities" exporter={false}>
     <Datagrid rowClick="edit" bulkActionButtons={false}>
       <TextField source="name" />
-      <ReferenceInput source="account_id" reference="accounts" link={false}>
+      <ReferenceField source="account_id" reference="accounts" link={false}>
         <TextField source="name" />
-      </ReferenceInput>
-      <SelectInput
-        source="stage"
-        choices={[
-          { id: "prospecting", name: "Prospecting" },
-          { id: "qualification", name: "Qualification" },
-          { id: "proposal", name: "Proposal" },
-          { id: "negotiation", name: "Negotiation" },
-          { id: "closed_won", name: "Closed Won" },
-          { id: "closed_lost", name: "Closed Lost" },
-        ]}
-        optionText={(choice) => choice.name}
-        optionValue="id"
-        sortable={false}
-      />
+      </ReferenceField>
+            <TextField source="stage" />
       <NumberField source="amount" options={{ style: "currency", currency: "AED" }} />
-      <SelectInput
-        source="currency"
-        choices={[
-          { id: "AED", name: "AED" },
-          { id: "USD", name: "USD" },
-          { id: "EUR", name: "EUR" },
-          { id: "GBP", name: "GBP" },
-        ]}
-        optionText={(choice) => choice.name}
-        optionValue="id"
-        sortable={false}
-      />
+            <TextField source="currency" />
       <DateField source="expected_close_date" />
       <DateField source="created_at" showTime />
     </Datagrid>

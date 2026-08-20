@@ -8,12 +8,13 @@ import {
   TextInput, 
   SelectInput, 
   ReferenceInput, 
+  ReferenceField,
   NumberInput,
   DateInput,
+  NumberField,
   Toolbar,
   SaveButton,
   DeleteButton,
-  NumberField,
 } from "react-admin";
 
 // Invoices resource following PRD Section 8.3
@@ -21,40 +22,14 @@ export const InvoicesList = (props: any) => (
   <List {...props} title="Invoices" exporter={false}>
     <Datagrid rowClick="edit" bulkActionButtons={false}>
       <TextField source="invoice_number" />
-      <ReferenceInput source="account_id" reference="accounts" link={false}>
+      <ReferenceField source="account_id" reference="accounts" link={false}>
         <TextField source="name" />
-      </ReferenceInput>
-      <ReferenceInput source="sales_order_id" reference="sales_orders" link={false}>
+      </ReferenceField>
+      <ReferenceField source="sales_order_id" reference="sales_orders" link={false}>
         <TextField source="order_number" />
-      </ReferenceInput>
-      <SelectInput
-        source="currency"
-        choices={[
-          { id: "AED", name: "AED" },
-          { id: "USD", name: "USD" },
-          { id: "EUR", name: "EUR" },
-          { id: "GBP", name: "GBP" },
-        ]}
-        optionText={(choice) => choice.name}
-        optionValue="id"
-        sortable={false}
-      />
-      <SelectInput
-        source="status"
-        choices={[
-          { id: "draft", name: "Draft" },
-          { id: "sent", name: "Sent" },
-          { id: "viewed", name: "Viewed" },
-          { id: "paid", name: "Paid" },
-          { id: "partial", name: "Partial" },
-          { id: "overdue", name: "Overdue" },
-          { id: "void", name: "Void" },
-          { id: "cancelled", name: "Cancelled" },
-        ]}
-        optionText={(choice) => choice.name}
-        optionValue="id"
-        sortable={false}
-      />
+      </ReferenceField>
+      <TextField source="currency" />
+      <TextField source="status" />
       <NumberField source="total_amount" options={{ style: "currency", currency: "AED" }} />
       <NumberField source="amount_due" options={{ style: "currency", currency: "AED" }} />
       <DateField source="invoice_date" />

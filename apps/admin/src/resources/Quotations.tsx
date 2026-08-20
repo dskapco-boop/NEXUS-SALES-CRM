@@ -24,53 +24,18 @@ export const QuotationsList = (props: any) => (
   <List {...props} title="Quotations" exporter={false}>
     <Datagrid rowClick="edit" bulkActionButtons={false}>
       <TextField source="quote_number" />
-      <ReferenceInput source="account_id" reference="accounts" link={false}>
+      <ReferenceField source="account_id" reference="accounts" link={false}>
         <TextField source="name" />
-      </ReferenceInput>
-      <ReferenceInput source="opportunity_id" reference="opportunities" link={false}>
+      </ReferenceField>
+      <ReferenceField source="opportunity_id" reference="opportunities" link={false}>
         <TextField source="name" />
-      </ReferenceInput>
-      <SelectInput
-        source="currency"
-        choices={[
-          { id: "AED", name: "AED (UAE Dirham)" },
-          { id: "USD", name: "USD (US Dollar)" },
-          { id: "EUR", name: "EUR (Euro)" },
-          { id: "GBP", name: "GBP (British Pound)" },
-        ]}
-        optionText={(choice) => choice.name}
-        optionValue="id"
-        sortable={false}
-      />
-      <SelectInput
-        source="status"
-        choices={[
-          { id: "draft", name: "Draft" },
-          { id: "sent", name: "Sent" },
-          { id: "viewed", name: "Viewed" },
-          { id: "accepted", name: "Accepted" },
-          { id: "rejected", name: "Rejected" },
-          { id: "expired", name: "Expired" },
-          { id: "revised", name: "Revised" },
-        ]}
-        optionText={(choice) => choice.name}
-        optionValue="id"
-        sortable={false}
-      />
+      </ReferenceField>
+            <TextField source="currency" />
+            <TextField source="status" />
       <NumberField source="total_amount" options={{ style: "currency", currency: "AED" }} />
       <DateField source="quote_date" />
       <DateField source="valid_until" />
-      <SelectInput
-        source="approval_status"
-        choices={[
-          { id: "pending", name: "Pending Approval" },
-          { id: "approved", name: "Approved" },
-          { id: "rejected", name: "Rejected" },
-        ]}
-        optionText={(choice) => choice.name}
-        optionValue="id"
-        sortable={false}
-      />
+            <TextField source="approval_status" />
       <DateField source="sent_at" />
       <DateField source="accepted_at" />
     </Datagrid>

@@ -21,26 +21,13 @@ export const SalesOrdersList = (props: any) => (
   <List {...props} title="Sales Orders" exporter={false}>
     <Datagrid rowClick="edit" bulkActionButtons={false}>
       <TextField source="order_number" />
-      <ReferenceInput source="account_id" reference="accounts" link={false}>
+      <ReferenceField source="account_id" reference="accounts" link={false}>
         <TextField source="name" />
-      </ReferenceInput>
-      <ReferenceInput source="quote_id" reference="quotations" link={false}>
+      </ReferenceField>
+      <ReferenceField source="quote_id" reference="quotations" link={false}>
         <TextField source="quote_number" />
-      </ReferenceInput>
-      <SelectInput
-        source="status"
-        choices={[
-          { id: "draft", name: "Draft" },
-          { id: "confirmed", name: "Confirmed" },
-          { id: "processing", name: "Processing" },
-          { id: "shipped", name: "Shipped" },
-          { id: "delivered", name: "Delivered" },
-          { id: "cancelled", name: "Cancelled" },
-        ]}
-        optionText={(choice) => choice.name}
-        optionValue="id"
-        sortable={false}
-      />
+      </ReferenceField>
+            <TextField source="status" />
       <NumberField source="total_amount" options={{ style: "currency", currency: "AED" }} />
       <DateField source="order_date" />
       <DateField source="expected_ship_date" />
