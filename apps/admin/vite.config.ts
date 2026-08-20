@@ -40,12 +40,10 @@ export default defineConfig({
       "@nexus-crm/database": path.resolve(rootDir, "packages/database/src"),
       "@nexus-crm/ui": path.resolve(rootDir, "packages/ui/src"),
       "@nexus-crm/config": path.resolve(rootDir, "packages/config/src"),
-      // Force single React instance to prevent "Invalid hook call" error
-      // Root has react@18.2.0 + react-dom@18.3.1 (MISMATCH - causes Invalid hook call)
-      // Solution: alias both to the admin's local 18.3.1 version
-      react: path.resolve(__dirname, "node_modules/react"),
-      "react-dom": path.resolve(__dirname, "node_modules/react-dom"),
     },
+    // Dedupe React to prevent "Invalid hook call" from dual React copies
+    // Root has react@18.2.0 while admin expects react@18.3.1
+    dedupe: ["react", "react-dom"],
   },
   define: {
     __APP_NAME__: JSON.stringify("Nexus CRM Admin"),
