@@ -17,6 +17,7 @@ import {
   DeleteButton,
 } from "react-admin";
 import { StatusField } from "../components/StatusBadge";
+import { EditButton } from "react-admin";
 
 // Invoices resource following PRD Section 8.3
 export const InvoicesList = (props: any) => (
@@ -37,6 +38,8 @@ export const InvoicesList = (props: any) => (
       <DateField source="due_date" />
       <DateField source="sent_at" />
       <DateField source="paid_at" />
+      <EditButton />
+      <DeleteButton />
     </Datagrid>
   </List>
 );

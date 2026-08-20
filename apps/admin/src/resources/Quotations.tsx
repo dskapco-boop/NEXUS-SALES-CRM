@@ -19,6 +19,7 @@ import {
 } from "react-admin";
 import { NumberField, ReferenceField } from "react-admin";
 import { StatusField } from "../components/StatusBadge";
+import { EditButton } from "react-admin";
 
 // Quotations resource following PRD Section 7.1
 export const QuotationsList = (props: any) => (
@@ -39,6 +40,8 @@ export const QuotationsList = (props: any) => (
       <StatusField source="approval_status" type="quote_approval" />
       <DateField source="sent_at" />
       <DateField source="accepted_at" />
+      <EditButton />
+      <DeleteButton />
     </Datagrid>
   </List>
 );

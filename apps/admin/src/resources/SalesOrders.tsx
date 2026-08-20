@@ -14,6 +14,7 @@ import {
   Toolbar,
   SaveButton,
   DeleteButton,
+  EditButton,
   NumberField,
 } from "react-admin";
 import { StatusField } from "../components/StatusBadge";
@@ -36,6 +37,8 @@ export const SalesOrdersList = (props: any) => (
       <DateField source="shipped_date" />
       <DateField source="delivered_date" />
       <TextField source="tracking_number" />
+      <EditButton />
+      <DeleteButton />
     </Datagrid>
   </List>
 );

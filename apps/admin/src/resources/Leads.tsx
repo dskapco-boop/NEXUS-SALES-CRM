@@ -20,6 +20,8 @@ import {
   ExportButton,
   Button,
   useListContext,
+  EditButton,
+  DeleteButton,
 } from "react-admin";
 import { StatusField } from "../components/StatusBadge";
 import { KanbanBoard } from "./KanbanBoard";
@@ -222,6 +224,8 @@ export const LeadsList = (props: any) => {
         <NumberField source="score" />
         <StatusField source="status" type="lead_status" />
         <DateField source="created_at" showTime />
+        <EditButton />
+        <DeleteButton />
       </Datagrid>
     </List>
   );
