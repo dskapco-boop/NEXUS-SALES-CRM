@@ -1,7 +1,6 @@
 import { Card, CardContent, CardHeader, Typography, Grid, Paper, Box, Table, TableBody, TableCell, TableHead, TableRow } from "@mui/material";
 import { useEffect, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
-import { StatusField } from "../components/StatusBadge";
 
 // Krayin-style dashboard: metric cards + data tables
 // Uses Supabase directly to avoid react-admin context issues
