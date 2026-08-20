@@ -1,125 +1,118 @@
-import { Card, CardContent, CardHeader, Typography, Grid, Paper, Box, Table, TableBody, TableCell, TableHead, TableRow, Avatar, Link } from "@mui/material";
-import { useDataProvider, useNotify } from "react-admin";
+import { Card, CardContent, CardHeader, Typography, Grid, Paper, Box, Table, TableBody, TableCell, TableHead, TableRow } from "@mui/material";
 import { useEffect, useState } from "react";
+import { createClient } from "@supabase/supabase-js";
 import { StatusField } from "../components/StatusBadge";
 
 // Krayin-style dashboard: metric cards + data tables
-// Using real data from Supabase via react-admin dataProvider
+// Uses Supabase directly to avoid react-admin context issues
+
+const supabase = createClient(
+  import.meta.env.SUPABASE_URL || "https://nsdwlywlvppqfuglpekt.supabase.co",
+  import.meta.env.SUPABASE_ANON_KEY || ""
+);
 
 export const Dashboard = () => {
-  const dataProvider = useDataProvider();
-  const notify = useNotify();
   const [metrics, setMetrics] = useState<any>({});
   const [recentLeads, setRecentLeads] = useState<any[]>([]);
   const [recentQuotes, setRecentQuotes] = useState<any[]>([]);
   const [accountsMap, setAccountsMap] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
 
-  // Fetch all dashboard data
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
         setLoading(true);
 
-        // Fetch recent leads
-        const leadsResult = await dataProvider.getList("leads", {
-          pagination: { page: 1, perPage: 5 },
-          sort: { field: "created_at", order: "DESC" },
-          filter: {},
-        });
-        setRecentLeads(leadsResult.data || []);
+        // Fetch recent leads (5 most recent)
+        const { data: leads, error: leadsError } = await supabase
+          .from("leads")
+          .select("id,first_name,last_name,company,status,source,score,created_at,custom_fields")
+          .order("created_at", { ascending: false })
+          .limit(5);
+        setRecentLeads(leads || []);
 
-        // Fetch all leads (for metrics)
-        const allLeadsResult = await dataProvider.getList("leads", {
-          pagination: { page: 1, perPage: 1000 },
-          sort: { field: "created_at", order: "DESC" },
-          filter: {},
-        });
-        const allLeads = allLeadsResult.data || [];
+        // Fetch all leads for metrics
+        const { data: allLeads, error: allLeadsError } = await supabase
+          .from("leads")
+          .select("id,status,custom_fields");
+        const leadsData = allLeads || [];
 
-        // Fetch all opportunities (for won/lost revenue)
-        const oppsResult = await dataProvider.getList("opportunities", {
-          pagination: { page: 1, perPage: 1000 },
-          sort: { field: "created_at", order: "DESC" },
-          filter: {},
-        });
-        const allOpps = oppsResult.data || [];
+        // Fetch all opportunities
+        const { data: allOpps } = await supabase
+          .from("opportunities")
+          .select("id,stage,amount");
+        const oppsData = allOpps || [];
 
-        // Fetch all quotes (for quotes count)
-        const quotesResult = await dataProvider.getList("quotes", {
-          pagination: { page: 1, perPage: 1000 },
-          sort: { field: "created_at", order: "DESC" },
-          filter: {},
-        });
-        const allQuotes = quotesResult.data || [];
+        // Fetch all quotes
+        const { data: allQuotes } = await supabase
+          .from("quotes")
+          .select("id");
+        const quotesData = allQuotes || [];
 
-        // Fetch recent quotes
-        const recentQuotesResult = await dataProvider.getList("quotes", {
-          pagination: { page: 1, perPage: 5 },
-          sort: { field: "quote_date", order: "DESC" },
-          filter: {},
-        });
-        setRecentQuotes(recentQuotesResult.data || []);
+        // Fetch recent quotes (5)
+        const { data: recQuotes } = await supabase
+          .from("quotes")
+          .select("id,quote_number,account_id,total_amount,quote_date")
+          .order("quote_date", { ascending: false })
+          .limit(5);
+        setRecentQuotes(recQuotes || []);
 
-        // Fetch accounts (for name lookup)
-        const accountsResult = await dataProvider.getList("accounts", {
-          pagination: { page: 1, perPage: 1000 },
-          sort: { field: "name", order: "ASC" },
-          filter: {},
-        });
+        // Fetch accounts for name lookup
+        const { data: accounts } = await supabase
+          .from("accounts")
+          .select("id,name");
         const accMap: Record<string, string> = {};
-        (accountsResult.data || []).forEach((a: any) => {
-          accMap[a.id] = a.name;
-        });
+        (accounts || []).forEach((a: any) => { accMap[a.id] = a.name; });
         setAccountsMap(accMap);
 
-        // Calculate metrics
+        // Calculate pipeline stats
         const pipelineByStage: Record<string, { count: number; value: number }> = {};
-        allLeads.forEach((lead: any) => {
+        leadsData.forEach((lead: any) => {
           const stage = lead.status || "new";
           if (!pipelineByStage[stage]) pipelineByStage[stage] = { count: 0, value: 0 };
           pipelineByStage[stage].count += 1;
-          pipelineByStage[stage].value += parseFloat(lead.custom_fields?.estimated_value || 0);
+          const val = parseFloat(lead.custom_fields?.estimated_value || 0);
+          pipelineByStage[stage].value += isNaN(val) ? 0 : val;
         });
 
-        // Calculate won/lost revenue from opportunities
-        const wonRevenue = allOpps
+        // Calculate won/lost revenue
+        const wonRevenue = oppsData
           .filter((o: any) => o.stage === "closed_won" || o.stage === "won")
           .reduce((sum: number, o: any) => sum + parseFloat(o.amount || 0), 0);
-        const lostRevenue = allOpps
+        const lostRevenue = oppsData
           .filter((o: any) => o.stage === "closed_lost" || o.stage === "lost")
           .reduce((sum: number, o: any) => sum + parseFloat(o.amount || 0), 0);
 
-        // Calculate conversion rate
-        const wonOpportunities = allOpps.filter((o: any) => o.stage === "closed_won" || o.stage === "won").length;
-        const totalOpportunities = allOpps.length;
-        const conversionRate = totalOpportunities > 0 ? Math.round((wonOpportunities / totalOpportunities) * 100) : 0;
+        const wonOpps = oppsData.filter((o: any) => o.stage === "closed_won" || o.stage === "won").length;
+        const totalOpps = oppsData.length;
+        const conversionRate = totalOpps > 0 ? Math.round((wonOpps / totalOpps) * 100) : 0;
 
-        // Average lead value
-        const totalLeadValue = allLeads.reduce((sum: number, l: any) => sum + parseFloat(l.custom_fields?.estimated_value || 0), 0);
-        const avgLeadValue = allLeads.length > 0 ? Math.round(totalLeadValue / allLeads.length) : 0;
+        const totalLeadValue = leadsData.reduce((sum: number, l: any) => {
+          const val = parseFloat(l.custom_fields?.estimated_value || 0);
+          return sum + (isNaN(val) ? 0 : val);
+        }, 0);
+        const avgLeadValue = leadsData.length > 0 ? Math.round(totalLeadValue / leadsData.length) : 0;
 
         setMetrics({
           wonRevenue,
           lostRevenue,
-          totalLeads: allLeads.length,
-          totalQuotes: allQuotes.length,
+          totalLeads: leadsData.length,
+          totalQuotes: quotesData.length,
           avgLeadValue,
           conversionRate,
           pipeline: pipelineByStage,
-          totalOpportunities,
-          wonOpportunities,
+          totalOpportunities: totalOpps,
+          wonOpportunities: wonOpps,
         });
       } catch (error) {
         console.error("Dashboard data fetch error:", error);
-        notify("Could not load dashboard data", { type: "warning" });
       } finally {
         setLoading(false);
       }
     };
 
     fetchDashboardData();
-  }, [dataProvider, notify]);
+  }, []);
 
   const fmt = (n: number) => `$${n.toLocaleString()}`;
 
@@ -163,24 +156,10 @@ export const Dashboard = () => {
     { id: "lost", label: "Lost", color: "#ef4444" },
   ];
 
-  // Use Krayin-style status mappings
-  const statusLabelMap: Record<string, string> = {
-    new: "New",
-    contacted: "Contacted",
-    qualified: "Qualified",
-    unqualified: "Unqualified",
-    converted: "Converted",
-    follow_up: "Follow Up",
-    prospect: "Prospect",
-    negotiation: "Negotiation",
-    won: "Won",
-    lost: "Lost",
-  };
-
   if (loading) {
     return (
       <Card>
-        <CardHeader title="Nexus Sales CRM Dashboard" />
+        <CardHeader title="Nexus CRM" />
         <CardContent>
           <Typography>Loading dashboard...</Typography>
         </CardContent>
@@ -193,7 +172,7 @@ export const Dashboard = () => {
 
   return (
     <Card>
-      <CardHeader title="Nexus Sales CRM Dashboard" />
+      <CardHeader title="Nexus CRM" />
       <CardContent>
         {/* Metric Cards Row */}
         <Grid container spacing={2} sx={{ marginBottom: 2 }}>
@@ -217,10 +196,7 @@ export const Dashboard = () => {
                   <Typography variant="caption" color="text.secondary">
                     {stage.label}
                   </Typography>
-                  <Typography
-                    variant="h4"
-                    sx={{ fontWeight: 700, color: stage.color, mt: 0.5 }}
-                  >
+                  <Typography variant="h4" sx={{ fontWeight: 700, color: stage.color, mt: 0.5 }}>
                     {stageData.count}
                   </Typography>
                   <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
