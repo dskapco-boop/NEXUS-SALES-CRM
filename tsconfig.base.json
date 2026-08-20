@@ -1,0 +1,26 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "jsx": "react-jsx",
+    "strict": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "baseUrl": ".",
+    "paths": {
+      "@nexus-crm/config": ["packages/config/src"],
+      "@nexus-crm/database": ["packages/database/src"],
+      "@nexus-crm/api": ["packages/api/src"],
+      "@nexus-crm/ui": ["packages/ui/src"],
+      "@nexus-crm/crm-core": ["packages/crm-core/src"]
+    }
+  },
+  "exclude": ["node_modules", "dist", "build", ".expo"]
+}

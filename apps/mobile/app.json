@@ -1,0 +1,44 @@
+{
+  "expo": {
+    "name": "Nexus CRM",
+    "slug": "nexus-crm",
+    "version": "1.0.0",
+    "description": "Nexus CRM - Manage leads through invoices",
+    "orientation": "portrait",
+    "platforms": ["ios", "android", "web"],
+    "sdkVersion": "51.0.0",
+    "package": "com.nexuscrm.mobile",
+    "projectId": "nexus-crm-mobile",
+    "scheme": "nexus-crm",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "image": "./src/assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#243b53"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "bundleIdentifier": "com.nexuscrm.mobile",
+      "buildNumber": "1",
+      "config": {
+        "googleAuth": {
+          "reserved": true
+        }
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./src/assets/icon.png",
+        "backgroundColor": "#243b53"
+      },
+      "package": "com.nexuscrm.mobile",
+      "versionCode": 1,
+      "permissions": ["CAMERA", "READ_EXTERNAL_STORAGE", "WRITE_EXTERNAL_STORAGE"]
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "single-page",
+      "publicPath": "./dist/"
+    }
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "version": 2,
+  "github": {
+    "enabled": true
+  },
+  "env": {
+    "SUPABASE_URL": "https://mpqggnahfewwinxixqzj.supabase.co",
+    "SUPABASE_ANON_KEY": "sb_publishable_aP3-zVORHb_aZuWcQ8YZcg_IWYEdnfq",
+    "NODE_ENV": "production"
+  },
+  "installCommand": "npm install --legacy-peer-deps --force --ignore-scripts",
+  "buildCommand": "cd apps/admin && npx vite build --mode production",
+  "outputDirectory": "apps/admin/dist"
+}

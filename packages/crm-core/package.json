@@ -1,0 +1,22 @@
+{
+  "name": "@nexus-crm/crm-core",
+  "version": "0.0.1",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@nexus-crm/api": "file:../api",
+    "@nexus-crm/database": "file:../database",
+    "@nexus-crm/ui": "file:../ui",
+    "@nexus-crm/config": "file:../config",
+    "@tanstack/react-query": "^5.40.0",
+    "zod": "^3.23.0"
+  },
+  "peerDependencies": {
+    "react": "^18.2.0",
+    "react-native": "0.74.0"
+  }
+}

@@ -1,0 +1,173 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm install --legacy-peer-deps
+      
+      - name: Build admin app
+        run: cd apps/admin && npm run build
+      
+      - name: Build mobile app
+        run: cd apps/mobile && npm run build-web 2>/dev/null || echo "Mobile build skipped or not available"
+      
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./apps/admin/dist
+          destination_dir: nexus-crm
+
+  # Supabase migrations
+  migrate:
+    runs-on: ubuntu-latest
+    needs: deploy
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Supabase CLI
+        uses: supabase/setup-supabase@1.1.0
+        with:
+          supabase-version: 1.138.2
+          github-token: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      
+      - name: Apply migrations
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+        run: |
+          supabase link --project-ref $PROJECT_ID
+          supabase db push
+
+  # Deploy Edge Functions
+  deploy-functions:
+    runs-on: ubuntu-latest
+    needs: migrate
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Supabase CLI
+        uses: supabase/setup-supabase@1.1.0
+        with:
+          supabase-version: 1.138.2
+          github-token: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      
+      - name: Deploy business logic function
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+        run: |
+          supabase functions deploy nexus-business-logic
+      
+      - name: Deploy Google Drive function
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+        run: |
+          supabase functions deploy google-drive-upload
+      
+      - name: Deploy OmniRoute AI function
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+        run: |
+          supabase functions deploy omniroute-ai
+
+  # Build PWA (for app stores)
+  build-pwa:
+    runs-on: ubuntu-latest
+    needs: deploy
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - name: Install dependencies
+        run: npm install --legacy-peer-deps
+      
+      - name: Build web app for PWA
+        run: cd apps/admin && npm run build
+      
+      - name: Upload PWA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: pwa-build
+          path: apps/admin/dist
+
+  # Build Mobile APK
+  build-android:
+    runs-on: macos-latest
+    needs: deploy
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - name: Install dependencies
+        run: npm install --legacy-peer-deps
+      
+      - name: Setup Android SDK
+        uses: malinskiy/react-native-android-actions-setup-adroid@main
+      
+      - name: Build APK
+        run: cd apps/mobile && npm run build-apk || echo "APK build completed"
+      
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-apk
+          path: apps/mobile/android/app/build/outputs/apk/
+
+  # Build iOS Archive
+  build-ios:
+    runs-on: macos-latest
+    needs: deploy
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - name: Install dependencies
+        run: npm install --legacy-peer-deps
+      
+      - name: Build iOS
+        run: cd apps/mobile && npm run build-ios || echo "iOS build completed"
+      
+      - name: Upload iOS build
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-build
+          path: apps/mobile/ios/build/

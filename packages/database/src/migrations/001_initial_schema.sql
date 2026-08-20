@@ -1,0 +1,3 @@
+-- Placeholder migration: rename this file to YYYYMMDDHHMMSS_initial_schema.sql
+-- The full schema is in schema.sql (applied via supabase db reset)
+-- This file is intentionally empty - schema is managed via schema.sql directly

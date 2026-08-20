@@ -1,0 +1,18 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "jsx": "react-jsx",
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"]
+    },
+    "plugins": [
+      {
+        "name": "nativewind"
+      }
+    ]
+  },
+  "include": ["app/**/*", "src/**/*", "*.config.js", "app.json", "babel.config.js"],
+  "exclude": ["node_modules", "dist"]
+}

@@ -1,0 +1,10 @@
+packages:
+  - "apps/*"
+  - "packages/*"
+
+nodeLinker: "node-modules"
+
+packageExtensions:
+  "react@^18.2.0":
+    dependencies:
+      "react-native": "0.74.0"
