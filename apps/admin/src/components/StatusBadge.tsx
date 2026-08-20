@@ -5,17 +5,16 @@ import { Chip } from "@mui/material";
 const STATUS_CONFIGS: Record<string, Record<string, { label: string; color: string }>> = {
   // Lead status - Krayin pipeline: New, Follow Up, Prospect, Negotiation, Won, Lost
   lead_status: {
-    new: { label: "New", color: "#3b82f1" },           // blue
-    followed_up: { label: "Follow Up", color: "#a78bfa" }, // purple
+    new: { label: "New", color: "#3b82f1" },
+    followed_up: { label: "Follow Up", color: "#a78bfa" },
     follow_up: { label: "Follow Up", color: "#a78bfa" },
-    prospect: { label: "Prospect", color: "#f59e0b" },  // amber
-    qualified: { label: "Qualified", color: "#8b5cf6" }, // violet
+    prospect: { label: "Prospect", color: "#f59e0b" },
+    qualified: { label: "Qualified", color: "#8b5cf6" },
     negotiation: { label: "Negotiation", color: "#8b5cf6" },
-    won: { label: "Won", color: "#22c55e" },           // green
+    won: { label: "Won", color: "#22c55e" },
     converted: { label: "Converted", color: "#22c55e" },
-    lost: { label: "Lost", color: "#ef4444" },         // red
+    lost: { label: "Lost", color: "#ef4444" },
     unqualified: { label: "Unqualified", color: "#f59e0b" },
-    // Legacy statuses (fallback)
     contacted: { label: "Contacted", color: "#a78bfa" },
   },
   // Opportunity stage
@@ -63,6 +62,19 @@ const STATUS_CONFIGS: Record<string, Record<string, { label: string; color: stri
     void: { label: "Void", color: "#6b7280" },
     cancelled: { label: "Cancelled", color: "#ef4444" },
   },
+  // Urgency / Badge types (Krayin badges)
+  urgency: {
+    urgent: { label: "Urgent Sale", color: "#ef4444" },
+    super_priority: { label: "Super Priority", color: "#ef4444" },
+    high: { label: "High Priority", color: "#f97316" },
+    immediate_action: { label: "Immediate Action", color: "#ef4444" },
+    requirement: { label: "Requirement", color: "#3b82f1" },
+    vip: { label: "VIP Client", color: "#22c55e" },
+    enquiry: { label: "Enquiry", color: "#f59e0b" },
+    quote: { label: "Quote", color: "#f59e0b" },
+    medium: { label: "Medium", color: "#f59e0b" },
+    low: { label: "Low", color: "#22c55e" },
+  },
 };
 
 /**
@@ -75,7 +87,7 @@ export const StatusField = ({ source, type = "lead_status" }: { source: string; 
 
   if (!value) return null;
 
-  const config = STATUS_CONFIGS[type]?.[value] || { label: value, color: "#6b7280" };
+  const config = STATUS_CONFIGS[type]?.[value] || STATUS_CONFIGS[type]?.[value.toLowerCase()] || { label: value, color: "#6b7280" };
 
   return (
     <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
@@ -99,7 +111,7 @@ export const StatusField = ({ source, type = "lead_status" }: { source: string; 
  * Standalone StatusBadge - for use outside of Datagrid rows
  */
 export const StatusBadge = ({ status, type = "lead_status" }: { status: string; type?: string }) => {
-  const config = STATUS_CONFIGS[type]?.[status] || { label: status, color: "#6b7280" };
+  const config = STATUS_CONFIGS[type]?.[status] || STATUS_CONFIGS[type]?.[status.toLowerCase()] || { label: status, color: "#6b7280" };
 
   return (
     <Chip
