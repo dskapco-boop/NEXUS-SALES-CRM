@@ -19,7 +19,7 @@ for (const envPath of envFiles) {
       if (trimmed && !trimmed.startsWith("#") && trimmed.includes("=")) {
         const [key, ...valueParts] = trimmed.split("=");
         const value = valueParts.join("=").trim();
-        if (!envVars[key]) envVars[key] = value; // Don't override .env with .env.local
+        envVars[key] = value; // .env.local takes priority over .env
       }
     }
   }

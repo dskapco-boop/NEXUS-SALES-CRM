@@ -4,11 +4,11 @@
     "enabled": true
   },
   "env": {
-    "SUPABASE_URL": "https://mpqggnahfewwinxixqzj.supabase.co",
-    "SUPABASE_ANON_KEY": "sb_publishable_aP3-zVORHb_aZuWcQ8YZcg_IWYEdnfq",
+    "SUPABASE_URL": "https://nsdwlywlvppqfuglpekt.supabase.co",
+    "SUPABASE_ANON_KEY": "sb_publishable_Qc18N72TTgFykkVTNV5ZFw_dbSl9V73",
     "NODE_ENV": "production"
   },
-  "installCommand": "npm install --legacy-peer-deps --force --ignore-scripts",
+  "installCommand": "npm install --legacy-peer-deps --ignore-scripts",
   "buildCommand": "cd apps/admin && npx vite build --mode production",
   "outputDirectory": "apps/admin/dist"
 }

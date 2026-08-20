@@ -1,4 +1,4 @@
-# Nexus CRM - B2B Sales CRM for General Trading & ISO Consultancy
+# Nexus Sales CRM - B2B Sales CRM for General Trading & ISO Consultancy
 
 A zero-cost, open-source CRM platform designed for **general trading companies** that also provide **ISO 9001:2015 management system consultancy services**. Built with enterprise-grade architecture using completely free tools.
 
