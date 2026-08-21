@@ -2,12 +2,9 @@ import React, { useState, useEffect } from "react";
 import { Box, Typography, Paper, useTheme, CircularProgress } from "@mui/material";
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
 import { LeadCard } from "./LeadCard";
-import { createClient } from "@supabase/supabase-js";
+import { getSupabaseClient } from "@nexus-crm/api";
 
-const supabase = createClient(
-  import.meta.env.SUPABASE_URL,
-  import.meta.env.SUPABASE_ANON_KEY
-);
+const supabase = getSupabaseClient();
 
 interface KanbanBoardProps {
   data: any[];
@@ -46,25 +43,32 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({ data, onEdit, onStageC
 
         if (pipeErr) throw pipeErr;
 
-        // Get stages linked to the default pipeline (ordered by sort_order)
+        // Get stage links ordered by sort_order (with stage code/name via separate query)
         const { data: stageLinks, error: stageErr } = await supabase
           .from("pipeline_stages")
-          .select("*,lead_stages:lead_stages(code,name)")
+          .select("*")
           .eq("pipeline_id", pipeline.id)
           .order("sort_order", { ascending: true });
 
         if (stageErr) throw stageErr;
 
+        // Get lead_stages separately (avoids PostgREST nested select 406 issue)
+        const stageIds = stageLinks.map((ps: any) => ps.stage_id);
+        const { data: leadStages, error: lsErr } = await supabase
+          .from("lead_stages")
+          .select("id,code,name")
+          .in("id", stageIds);
+
+        if (lsErr) throw lsErr;
+
+        // Build stage lookup: stageId → { code, name }
+        const stageLookup: Record<string, { code: string; name: string }> = {};
+        leadStages.forEach((s: any) => {
+          stageLookup[s.id] = { code: s.code, name: s.name };
+        });
+
         // Build stage code lookup: stageId → stageCode
         const idCodeMap: Record<string, string> = {};
-        stageLinks.forEach((ps: any) => {
-          if (ps.lead_stages?.id && ps.lead_stages?.code) {
-            idCodeMap[ps.lead_stages.id] = ps.lead_stages.code;
-          }
-        });
-        setStageIdCodeMap(idCodeMap);
-
-        // Map to the format KanbanBoard expects
         const stageColorMap: Record<string, string> = {
           new: "#6b7280",      // gray
           follow_up: "#3b82f1",  // blue
@@ -73,21 +77,26 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({ data, onEdit, onStageC
           won: "#10b981",       // green
           lost: "#ef4444",      // red
         };
-
-        const formatted = stageLinks.map((ps: any) => ({
-          id: ps.lead_stages.code,
-          label: ps.lead_stages.name,
-          color: stageColorMap[ps.lead_stages.code] || "#6b7280",
-          sort_order: ps.sort_order,
-          probability: ps.probability,
-          is_won: ps.is_won,
-          is_lost: ps.is_lost,
-        }));
+        const formatted = stageLinks.map((ps: any) => {
+          const stageInfo = stageLookup[ps.stage_id] || { code: "", name: "" };
+          if (ps.stage_id && stageInfo.code) {
+            idCodeMap[ps.stage_id] = stageInfo.code;
+          }
+          return {
+            id: stageInfo.code,
+            label: stageInfo.name,
+            color: stageColorMap[stageInfo.code] || "#6b7280",
+            sort_order: ps.sort_order,
+            probability: ps.probability,
+            is_won: ps.is_won,
+            is_lost: ps.is_lost,
+          };
+        });
 
         setPipelineStages(formatted);
+        setStageIdCodeMap(idCodeMap);
 
         // Also enrich the incoming lead data with stage codes
-        // (the data provider returns pipeline_stage_id as UUID, not the code)
         if (data && data.length > 0) {
           const enrichedData = data.map((lead: any) => {
             const stageCode = idCodeMap[lead.pipeline_stage_id];
