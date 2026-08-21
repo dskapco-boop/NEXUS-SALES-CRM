@@ -312,7 +312,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({ data, onEdit, onStageC
 
                 {/* Total value */}
                 <Typography variant="body2" sx={{ fontWeight: 600, marginBottom: 4 }}>
-                  ${stageValue.toLocaleString()}
+                  {stageValue.toLocaleString()} د.إ
                 </Typography>
 
                 {/* Progress bar */}
@@ -430,7 +430,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({ data, onEdit, onStageC
                 </div>
 
                 <Typography variant="body2" sx={{ fontWeight: 600, marginBottom: 12 }}>
-                  ${stageValue.toLocaleString()}
+                  {stageValue.toLocaleString()} د.إ
                 </Typography>
 
                 {/* No droppable for terminal stages */}

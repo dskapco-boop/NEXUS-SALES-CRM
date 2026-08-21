@@ -1,14 +1,10 @@
 import { Card, CardContent, CardHeader, Typography, Grid, Paper, Box, Table, TableBody, TableCell, TableHead, TableRow } from "@mui/material";
 import { useEffect, useState } from "react";
-import { createClient } from "@supabase/supabase-js";
+import { getSupabaseClient } from "@nexus-crm/api";
 
 // Krayin-style dashboard: metric cards + data tables
 // Uses Supabase directly to avoid react-admin context issues
-
-const supabase = createClient(
-  import.meta.env.SUPABASE_URL || "https://nsdwlywlvppqfuglpekt.supabase.co",
-  import.meta.env.SUPABASE_ANON_KEY || ""
-);
+const supabase = getSupabaseClient();
 
 export const Dashboard = () => {
   const [metrics, setMetrics] = useState<any>({});
@@ -113,7 +109,7 @@ export const Dashboard = () => {
     fetchDashboardData();
   }, []);
 
-  const fmt = (n: number) => `$${n.toLocaleString()}`;
+  const fmt = (n: number) => `${n.toLocaleString()} د.إ`;
 
   const MetricCard = ({ title, value, subtitle, color = "default" }: any) => {
     const colorMap: Record<string, string> = {
@@ -336,7 +332,7 @@ export const Dashboard = () => {
                       <TableCell>{accountsMap[quote.account_id] || "-"}</TableCell>
                       <TableCell>
                         {quote.total_amount
-                          ? `$${parseFloat(quote.total_amount).toLocaleString()}`
+                          ? `${parseFloat(quote.total_amount).toLocaleString()} د.إ`
                           : "-"}
                       </TableCell>
                       <TableCell>
