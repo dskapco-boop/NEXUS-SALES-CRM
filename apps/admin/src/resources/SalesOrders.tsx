@@ -107,9 +107,9 @@ export const SalesOrdersEdit = (props: any) => (
         label="Currency"
         choices={[
           { id: "AED", name: "AED (UAE Dirham)" },
-          { id: "USD", name: "USD (US Dollar)" },
           { id: "EUR", name: "EUR (Euro)" },
           { id: "GBP", name: "GBP (British Pound)" },
+          { id: "SAR", name: "SAR (Saudi Riyal)" },
         ]}
         defaultValue="AED"
       />
