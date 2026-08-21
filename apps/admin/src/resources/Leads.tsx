@@ -1,4 +1,3 @@
-import React, { useState } from "react";
 import {
   List,
   Datagrid,
@@ -18,68 +17,31 @@ import {
   CreateButton,
   ExportButton,
   Button,
-  useListContext,
   EditButton,
   DeleteButton,
 } from "react-admin";
 import { StatusField } from "../components/StatusBadge";
-import { KanbanBoard } from "./KanbanBoard";
-import { Box } from "@mui/material";
 
-// Custom toolbar with view toggle (Table / Kanban)
-const LeadsTopToolbar = ({ showKanban, setShowKanban }: any) => (
-  <TopToolbar>
-    <CreateButton />
-    <ExportButton />
-    <Button
-      label={showKanban ? "Table" : "Kanban"}
-      onClick={() => setShowKanban(!showKanban)}
-      size="small"
-    />
-  </TopToolbar>
+// Leads List - table view only in main list page
+// (Kanban board is shown on the Dashboard instead)
+export const LeadsList = (props: any) => (
+  <List {...props} title="Leads" exporter={false}>
+    <TopToolbar>
+      <CreateButton />
+      <ExportButton />
+    </TopToolbar>
+    <Datagrid rowClick="edit" bulkActionButtons={false}>
+      <TextField source="company" />
+      <TextField source="first_name" />
+      <TextField source="last_name" />
+      <NumberField source="score" />
+      <StatusField source="status" type="lead_status" />
+      <DateField source="created_at" showTime />
+      <EditButton />
+      <DeleteButton />
+    </Datagrid>
+  </List>
 );
-
-// Main Leads List with Kanban/Table toggle
-export const LeadsList = (props: any) => {
-  const [showKanban, setShowKanban] = useState(false);
-  const listContext = useListContext();
-
-  if (showKanban) {
-    return (
-      <div>
-        <LeadsTopToolbar showKanban={showKanban} setShowKanban={setShowKanban} />
-        <Box sx={{ p: 2 }}>
-          <KanbanBoard
-            data={listContext.data}
-            onEdit={(id: string) => {
-              window.location.hash = `#/leads/${id}`;
-            }}
-            onStageChange={(leadId: string, newStageCode: string) => {
-              // Refresh the list after stage change
-              listContext.refetch();
-            }}
-          />
-        </Box>
-      </div>
-    );
-  }
-
-  return (
-    <List {...props} title="Leads" exporter={false}>
-      <LeadsTopToolbar showKanban={showKanban} setShowKanban={setShowKanban} />
-      <Datagrid rowClick="edit" bulkActionButtons={false}>
-        <TextField source="company" />
-        <TextField source="first_name" />
-        <TextField source="last_name" />
-        <NumberField source="score" />
-        <StatusField source="status" type="lead_status" />
-        <DateField source="created_at" showTime />
-        <EditButton />
-        <DeleteButton />
-      </Datagrid>
-    </List>
-  );
-};
 
 export const LeadCreate = (props: any) => (
   <Create {...props} title="Create New Lead">
@@ -117,10 +79,10 @@ export const LeadCreate = (props: any) => (
         label="Status"
         choices={[
           { id: "new", name: "New" },
-          { id: "contacted", name: "Contacted" },
-          { id: "qualified", name: "Qualified" },
-          { id: "unqualified", name: "Unqualified" },
-          { id: "converted", name: "Converted" },
+          { id: "follow_up", name: "Follow Up" },
+          { id: "prospect", name: "Prospect" },
+          { id: "negotiation", name: "Negotiation" },
+          { id: "won", name: "Won" },
           { id: "lost", name: "Lost" },
         ]}
         isRequired
@@ -209,10 +171,10 @@ export const LeadsEdit = (props: any) => (
         label="Status"
         choices={[
           { id: "new", name: "New" },
-          { id: "contacted", name: "Contacted" },
-          { id: "qualified", name: "Qualified" },
-          { id: "unqualified", name: "Unqualified" },
-          { id: "converted", name: "Converted" },
+          { id: "follow_up", name: "Follow Up" },
+          { id: "prospect", name: "Prospect" },
+          { id: "negotiation", name: "Negotiation" },
+          { id: "won", name: "Won" },
           { id: "lost", name: "Lost" },
         ]}
         isRequired
