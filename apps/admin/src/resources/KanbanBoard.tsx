@@ -1,22 +1,101 @@
-import React, { useState } from "react";
-import { Box, Typography, Paper, useTheme } from "@mui/material";
+import React, { useState, useEffect } from "react";
+import { Box, Typography, Paper, useTheme, CircularProgress } from "@mui/material";
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
 import { LeadCard } from "./LeadCard";
+import { createClient } from "@supabase/supabase-js";
+
+const supabase = createClient(
+  import.meta.env.SUPABASE_URL,
+  import.meta.env.SUPABASE_ANON_KEY
+);
 
 interface KanbanBoardProps {
   data: any[];
-  stages: { id: string; label: string; color: string }[];
   onEdit: (id: string) => void;
-  onStageChange?: (leadId: string, newStage: string) => void;
+  onStageChange?: (leadId: string, newStageCode: string) => void;
 }
 
-export const KanbanBoard: React.FC<KanbanBoardProps> = ({ data, stages, onEdit, onStageChange }) => {
+// Default Krayin-style stages (fallback if DB has no pipeline configured)
+const DEFAULT_STAGES = [
+  { id: "new", label: "New", color: "#6b7280" },
+  { id: "follow_up", label: "Follow Up", color: "#3b82f1" },
+  { id: "prospect", label: "Prospect", color: "#8b5cf6" },
+  { id: "negotiation", label: "Negotiation", color: "#f59e0b" },
+  { id: "won", label: "Won", color: "#10b981" },
+  { id: "lost", label: "Lost", color: "#ef4444" },
+];
+
+export const KanbanBoard: React.FC<KanbanBoardProps> = ({ data, onEdit, onStageChange }) => {
   const [leadData, setLeadData] = useState(data || []);
+  const [pipelineStages, setPipelineStages] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const theme = useTheme();
 
-  // Group leads by stage
+  // Fetch configurable pipeline stages from Supabase
+  useEffect(() => {
+    const fetchPipeline = async () => {
+      setLoading(true);
+      try {
+        // Get default pipeline
+        const { data: pipeline, error: pipeErr } = await supabase
+          .from("lead_pipelines")
+          .select("*")
+          .eq("is_default", true)
+          .single();
+
+        if (pipeErr) throw pipeErr;
+
+        // Get stages linked to the default pipeline (ordered by sort_order)
+        const { data: stageLinks, error: stageErr } = await supabase
+          .from("pipeline_stages")
+          .select("*,lead_stages:lead_stages(code,name)")
+          .eq("pipeline_id", pipeline.id)
+          .order("sort_order", { ascending: true });
+
+        if (stageErr) throw stageErr;
+
+        // Map to the format KanbanBoard expects
+        const stageMap: Record<string, string> = {
+          new: "#6b7280",      // gray
+          follow_up: "#3b82f1",  // blue
+          prospect: "#8b5cf6",  // purple
+          negotiation: "#f59e0b", // amber
+          won: "#10b981",       // green
+          lost: "#ef4444",      // red
+        };
+
+        const formatted = stageLinks.map((ps) => ({
+          id: ps.lead_stages.code,
+          label: ps.lead_stages.name,
+          color: stageMap[ps.lead_stages.code] || "#6b7280",
+          sort_order: ps.sort_order,
+          probability: ps.probability,
+          is_won: ps.is_won,
+          is_lost: ps.is_lost,
+        }));
+
+        setPipelineStages(formatted);
+      } catch (err) {
+        console.error("Failed to fetch pipeline:", err);
+        // Fall back to default stages
+        setPipelineStages(DEFAULT_STAGES);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPipeline();
+  }, []);
+
+  // Use pipeline stages from DB, or fall back to defaults
+  const stages = pipelineStages.length > 0 ? pipelineStages : DEFAULT_STAGES;
+
+  // Group leads by stage code (matching lead.status → stage.id)
   const leadsByStage = stages.reduce((acc: Record<string, any[]>, stage) => {
-    acc[stage.id] = leadData.filter((lead: any) => lead.status === stage.id);
+    acc[stage.id] = leadData.filter((lead: any) => {
+      const leadStage = lead.pipeline_stage?.code || lead.status;
+      return leadStage === stage.id;
+    });
     return acc;
   }, {});
 
@@ -28,50 +107,91 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({ data, stages, onEdit, 
     }, 0);
   };
 
-  // Handle drag end
-  const handleDragEnd = (result: any) => {
+  // Handle drag end — updates the database
+  const handleDragEnd = async (result: any) => {
     const { destination, source, draggableId } = result;
-
     if (!destination) return;
 
     const sourceStage = source.droppableId;
     const destStage = destination.droppableId;
-    const sourceIndex = source.index;
-    const destIndex = destination.index;
 
-    // Same column reorder
-    if (sourceStage === destStage) {
-      const stageLeads = Array.from(leadsByStage[sourceStage] || []);
-      const [reordered] = stageLeads.splice(sourceIndex, 1);
-      stageLeads.splice(destIndex, 0, reordered);
-      return;
-    }
+    if (sourceStage === destStage) return;
 
-    // Moving between columns
+    // Get the moved lead
     const sourceLeads = Array.from(leadsByStage[sourceStage] || []);
-    const destLeads = Array.from(leadsByStage[destStage] || []);
-    const [movedLead] = sourceLeads.splice(sourceIndex, 1);
+    const [movedLead] = sourceLeads.filter((l: any) => String(l.id) === draggableId);
 
-    // Update the lead's status
-    const updatedLead = { ...movedLead, status: destStage };
+    if (!movedLead) return;
 
-    // Update local state
+    // Find the stage code from destStage (which is the stage.id = code)
+    const destStageCode = destStage;
+
+    // Update local state immediately (optimistic update)
+    const updatedLead = { ...movedLead, status: destStageCode, pipeline_stage_id: destStageCode };
     setLeadData((prev: any[]) => {
-      return prev
-        .filter((lead: any) => lead.id !== draggableId)
-        .concat([updatedLead]);
+      return prev.map((lead: any) =>
+        String(lead.id) === draggableId ? updatedLead : lead
+      );
     });
 
-    // Call the stage change handler if provided
-    if (onStageChange) {
-      onStageChange(draggableId, destStage);
+    // Update the database
+    try {
+      // Get the stage UUID from the stage code
+      const { data: stageData, error: stageErr } = await supabase
+        .from("lead_stages")
+        .select("id")
+        .eq("code", destStageCode)
+        .single();
+
+      if (stageErr) throw stageErr;
+
+      // Get default pipeline ID
+      const { data: pipelineData, error: pipeErr } = await supabase
+        .from("lead_pipelines")
+        .select("id")
+        .eq("is_default", true)
+        .single();
+
+      if (pipeErr) throw pipeErr;
+
+      // Update the lead
+      const { error: updateErr } = await supabase
+        .from("leads")
+        .update({
+          pipeline_id: pipelineData.id,
+          pipeline_stage_id: stageData.id,
+          status: destStageCode,
+        })
+        .eq("id", draggableId);
+
+      if (updateErr) throw updateErr;
+
+      if (onStageChange) {
+        onStageChange(draggableId, destStageCode);
+      }
+    } catch (err) {
+      console.error("Failed to update lead stage:", err);
+      // Revert optimistic update
+      setLeadData((prev: any[]) => {
+        return prev.map((lead: any) =>
+          String(lead.id) === draggableId ? { ...movedLead, status: sourceStage, pipeline_stage: undefined } : lead
+        );
+      });
     }
   };
 
+  if (loading) {
+    return (
+      <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", py: 4 }}>
+        <CircularProgress size={32} />
+      </Box>
+    );
+  }
+
   // Split stages into pipeline stages and terminal stages (Won/Lost)
-  const pipelineStages = stages.slice(0, 4); // New, Follow Up, Prospect, Negotiation
-  const wonStage = stages.find((s) => s.id === "won") || stages.find((s) => s.id === "converted");
-  const lostStage = stages.find((s) => s.id === "lost");
+  const pipelineStagesNonTerminal = stages.slice(0, 4); // New, Follow Up, Prospect, Negotiation
+  const wonStage = stages.find((s) => s.is_won || s.id === "won" || s.id === "converted");
+  const lostStage = stages.find((s) => s.is_lost || s.id === "lost");
   const terminalStages = [wonStage, lostStage].filter(Boolean);
 
   return (
@@ -79,7 +199,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({ data, stages, onEdit, 
       <DragDropContext onDragEnd={handleDragEnd}>
         {/* Pipeline stages row */}
         <div style={{ display: "flex", gap: 16, marginBottom: 24 }}>
-          {pipelineStages.map((stage) => {
+          {pipelineStagesNonTerminal.map((stage) => {
             const stageLeads = leadsByStage[stage.id] || [];
             const stageValue = calculateStageValue(stageLeads);
             const maxCount = Math.max(...stages.map((s) => (leadsByStage[s.id] || []).length));
@@ -89,8 +209,8 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({ data, stages, onEdit, 
               <div
                 key={stage.id}
                 style={{
-                  flex: "1 1 200px",
-                  minWidth: 200,
+                  flex: "1 1 220px",
+                  minWidth: 220,
                   backgroundColor: "#f9fafb",
                   borderRadius: 8,
                   padding: 12,
@@ -209,8 +329,8 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({ data, stages, onEdit, 
               <div
                 key={stage.id}
                 style={{
-                  flex: "1 1 200px",
-                  minWidth: 200,
+                  flex: "1 1 220px",
+                  minWidth: 220,
                   backgroundColor: "#f9fafb",
                   borderRadius: 8,
                   padding: 12,

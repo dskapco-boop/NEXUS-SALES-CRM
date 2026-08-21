@@ -26,16 +26,6 @@ import { StatusField } from "../components/StatusBadge";
 import { KanbanBoard } from "./KanbanBoard";
 import { Box } from "@mui/material";
 
-// Krayin-style pipeline stages: New → Follow Up → Prospect → Negotiation → Won → Lost
-const PIPELINE_STAGES = [
-  { id: "new", label: "New", color: "#3b82f1" },
-  { id: "follow_up", label: "Follow Up", color: "#a78bfa" },
-  { id: "prospect", label: "Prospect", color: "#f59e0b" },
-  { id: "negotiation", label: "Negotiation", color: "#8b5cf6" },
-  { id: "won", label: "Won", color: "#22c55e" },
-  { id: "lost", label: "Lost", color: "#ef4444" },
-];
-
 // Custom toolbar with view toggle (Table / Kanban)
 const LeadsTopToolbar = ({ showKanban, setShowKanban }: any) => (
   <TopToolbar>
@@ -61,9 +51,12 @@ export const LeadsList = (props: any) => {
         <Box sx={{ p: 2 }}>
           <KanbanBoard
             data={listContext.data}
-            stages={PIPELINE_STAGES}
             onEdit={(id: string) => {
               window.location.hash = `#/leads/${id}`;
+            }}
+            onStageChange={(leadId: string, newStageCode: string) => {
+              // Refresh the list after stage change
+              listContext.refetch();
             }}
           />
         </Box>
