@@ -29,6 +29,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({ data, onEdit, onStageC
   const [leadData, setLeadData] = useState(data || []);
   const [pipelineStages, setPipelineStages] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [stageIdCodeMap, setStageIdCodeMap] = useState<Record<string, string>>({});
   const theme = useTheme();
 
   // Fetch configurable pipeline stages from Supabase
@@ -54,8 +55,17 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({ data, onEdit, onStageC
 
         if (stageErr) throw stageErr;
 
+        // Build stage code lookup: stageId → stageCode
+        const idCodeMap: Record<string, string> = {};
+        stageLinks.forEach((ps: any) => {
+          if (ps.lead_stages?.id && ps.lead_stages?.code) {
+            idCodeMap[ps.lead_stages.id] = ps.lead_stages.code;
+          }
+        });
+        setStageIdCodeMap(idCodeMap);
+
         // Map to the format KanbanBoard expects
-        const stageMap: Record<string, string> = {
+        const stageColorMap: Record<string, string> = {
           new: "#6b7280",      // gray
           follow_up: "#3b82f1",  // blue
           prospect: "#8b5cf6",  // purple
@@ -64,10 +74,10 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({ data, onEdit, onStageC
           lost: "#ef4444",      // red
         };
 
-        const formatted = stageLinks.map((ps) => ({
+        const formatted = stageLinks.map((ps: any) => ({
           id: ps.lead_stages.code,
           label: ps.lead_stages.name,
-          color: stageMap[ps.lead_stages.code] || "#6b7280",
+          color: stageColorMap[ps.lead_stages.code] || "#6b7280",
           sort_order: ps.sort_order,
           probability: ps.probability,
           is_won: ps.is_won,
@@ -75,26 +85,80 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({ data, onEdit, onStageC
         }));
 
         setPipelineStages(formatted);
+
+        // Also enrich the incoming lead data with stage codes
+        // (the data provider returns pipeline_stage_id as UUID, not the code)
+        if (data && data.length > 0) {
+          const enrichedData = data.map((lead: any) => {
+            const stageCode = idCodeMap[lead.pipeline_stage_id];
+            return {
+              ...lead,
+              pipeline_stage: {
+                code: stageCode || undefined,
+              },
+            };
+          });
+          setLeadData(enrichedData);
+        }
       } catch (err) {
         console.error("Failed to fetch pipeline:", err);
-        // Fall back to default stages
         setPipelineStages(DEFAULT_STAGES);
+        // Even on error, try to enrich with status mapping
+        const statusToStageMap: Record<string, string> = {
+          new: "new",
+          contacted: "follow_up",
+          qualified: "prospect",
+          unqualified: "lost",
+          converted: "won",
+          lost: "lost",
+        };
+        if (data && data.length > 0) {
+          setLeadData(data.map((lead: any) => ({
+            ...lead,
+            _mapped_stage: statusToStageMap[lead.status],
+          })));
+        }
       } finally {
         setLoading(false);
       }
     };
 
     fetchPipeline();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data]);
 
   // Use pipeline stages from DB, or fall back to defaults
   const stages = pipelineStages.length > 0 ? pipelineStages : DEFAULT_STAGES;
 
-  // Group leads by stage code (matching lead.status → stage.id)
+  // Map old ENUM status values to Krayin pipeline stage codes
+  const statusToStageMap: Record<string, string> = {
+    new: "new",
+    contacted: "follow_up",
+    qualified: "prospect",
+    unqualified: "lost",
+    converted: "won",
+    lost: "lost",
+  };
+
+  // Group leads by stage code
+  // Checks: pipeline_stage.code → _mapped_stage → status → mapped status
   const leadsByStage = stages.reduce((acc: Record<string, any[]>, stage) => {
     acc[stage.id] = leadData.filter((lead: any) => {
-      const leadStage = lead.pipeline_stage?.code || lead.status;
-      return leadStage === stage.id;
+      // First try pipeline_stage code (enriched from DB lookup)
+      if (lead.pipeline_stage?.code) {
+        return lead.pipeline_stage.code === stage.id;
+      }
+      // Next try _mapped_stage (status → Krayin stage code)
+      if (lead._mapped_stage) {
+        return lead._mapped_stage === stage.id;
+      }
+      // Next try direct status value match
+      if (lead.status === stage.id) {
+        return true;
+      }
+      // Finally try mapped status values
+      const mapped = statusToStageMap[lead.status];
+      return mapped === stage.id;
     });
     return acc;
   }, {});
