@@ -41,7 +41,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({ data, onEdit, onStageC
           .eq("is_default", true)
           .single();
 
-        if (pipeErr) throw pipeErr;
+        if (pipeErr || !pipeline) throw pipeErr || new Error("No default pipeline found");
 
         // Get stage links ordered by sort_order (with stage code/name via separate query)
         const { data: stageLinks, error: stageErr } = await supabase
@@ -200,9 +200,10 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({ data, onEdit, onStageC
     const destStageCode = destStage;
 
     // Update local state immediately (optimistic update)
-    const updatedLead = { ...movedLead, status: destStageCode, pipeline_stage_id: destStageCode };
+    // Note: pipeline_stage_id stays as-is locally, we just track status for display
+    const updatedLead = { ...movedLead, status: destStageCode };
     setLeadData((prev: any[]) => {
-      return prev.map((lead: any) =>
+      return prev.map((lead) =>
         String(lead.id) === draggableId ? updatedLead : lead
       );
     });
@@ -227,7 +228,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({ data, onEdit, onStageC
 
       if (pipeErr) throw pipeErr;
 
-      // Update the lead
+      // Update the lead with the correct UUID
       const { error: updateErr } = await supabase
         .from("leads")
         .update({
@@ -239,6 +240,15 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({ data, onEdit, onStageC
 
       if (updateErr) throw updateErr;
 
+      // Update local state with the correct UUID
+      setLeadData((prev: any[]) => {
+        return prev.map((lead) =>
+          String(lead.id) === draggableId
+            ? { ...updatedLead, pipeline_stage_id: stageData.id }
+            : lead
+        );
+      });
+
       if (onStageChange) {
         onStageChange(draggableId, destStageCode);
       }
@@ -246,8 +256,8 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({ data, onEdit, onStageC
       console.error("Failed to update lead stage:", err);
       // Revert optimistic update
       setLeadData((prev: any[]) => {
-        return prev.map((lead: any) =>
-          String(lead.id) === draggableId ? { ...movedLead, status: sourceStage, pipeline_stage: undefined } : lead
+        return prev.map((lead) =>
+          String(lead.id) === draggableId ? { ...movedLead } : lead
         );
       });
     }
