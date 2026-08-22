@@ -32,13 +32,14 @@ const LeadsTopToolbar = ({ showKanban, setShowKanban }: any) => (
       label={showKanban ? "Table" : "Kanban"}
       onClick={() => setShowKanban(!showKanban)}
       size="small"
+      variant={showKanban ? "outlined" : "contained"}
     />
   </TopToolbar>
 );
 
 // Main Leads List with Kanban/Table toggle
 export const LeadsList = (props: any) => {
-  const [showKanban, setShowKanban] = useState(false);
+  const [showKanban, setShowKanban] = useState(true); // Default to Kanban (matches Krayin design)
   const listContext = useListContext();
 
   if (showKanban) {
