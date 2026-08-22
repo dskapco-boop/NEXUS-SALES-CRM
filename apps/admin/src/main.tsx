@@ -1,6 +1,8 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
-import { Admin, Resource, Menu, MenuItem } from "react-admin";
+import { Admin, Resource, Menu } from "react-admin";
+import { Box, ListItemIcon, ListItemText } from "@mui/material";
+import { Settings as SettingsIcon, SmartToy as AIIcon } from "@mui/icons-material";
 import { supabaseDataProvider } from "./providers/dataProvider";
 import { authProvider } from "./providers/authProvider";
 import { LeadsList, LeadCreate, LeadsEdit } from "./resources/Leads";
@@ -19,6 +21,7 @@ import { AIPage } from "./ai/AIPage";
 import "./index.css";
 
 // Custom menu with Settings and AI entries in sidebar
+// Uses MUI components wrapped in react-admin's Menu
 const CustomMenu = (props: any) => (
   <Menu {...props}>
     <Menu.DashboardItem {...props} />
@@ -27,12 +30,14 @@ const CustomMenu = (props: any) => (
     <Menu.ResourceItem name="quotes" {...props} />
     <Menu.ResourceItem name="sales_orders" {...props} />
     <Menu.ResourceItem name="invoices" {...props} />
-    <MenuItem name="settings" {...props}>
-      ⚙️ Settings
-    </MenuItem>
-    <MenuItem name="ai" {...props}>
-      🤖 AI Functions
-    </MenuItem>
+    <Box component="span" onClick={() => { window.location.hash = "#/settings"; }} sx={{ cursor: "pointer", display: "flex", alignItems: "center", px: 2, py: 1.5, borderRadius: 1, "&:hover": { backgroundColor: "action.hover" } }}>
+      <ListItemIcon><SettingsIcon fontSize="small" /></ListItemIcon>
+      <ListItemText primary="Settings" />
+    </Box>
+    <Box component="span" onClick={() => { window.location.hash = "#/ai"; }} sx={{ cursor: "pointer", display: "flex", alignItems: "center", px: 2, py: 1.5, borderRadius: 1, "&:hover": { backgroundColor: "action.hover" } }}>
+      <ListItemIcon><AIIcon fontSize="small" /></ListItemIcon>
+      <ListItemText primary="AI Functions" />
+    </Box>
   </Menu>
 );
 
