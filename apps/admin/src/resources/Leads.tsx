@@ -38,43 +38,44 @@ const LeadsTopToolbar = ({ showKanban, setShowKanban }: any) => (
 );
 
 // Main Leads List with Kanban/Table toggle
+// The <List> provides the data context for both views
 export const LeadsList = (props: any) => {
   const [showKanban, setShowKanban] = useState(true); // Default to Kanban (matches Krayin design)
-  const listContext = useListContext();
-
-  if (showKanban) {
-    return (
-      <div>
-        <LeadsTopToolbar showKanban={showKanban} setShowKanban={setShowKanban} />
-        <Box sx={{ p: 2 }}>
-          <KanbanBoard
-            data={listContext.data}
-            onEdit={(id: string) => {
-              window.location.hash = `#/leads/${id}`;
-            }}
-            onStageChange={(leadId: string, newStageCode: string) => {
-              // Refresh the list after stage change
-              listContext.refetch();
-            }}
-          />
-        </Box>
-      </div>
-    );
-  }
 
   return (
     <List {...props} title="Leads" exporter={false}>
-      <LeadsTopToolbar showKanban={showKanban} setShowKanban={setShowKanban} />
-      <Datagrid rowClick="edit" bulkActionButtons={false}>
-        <TextField source="company" />
-        <TextField source="first_name" />
-        <TextField source="last_name" />
-        <NumberField source="score" />
-        <StatusField source="status" type="lead_status" />
-        <DateField source="created_at" showTime />
-        <EditButton />
-        <DeleteButton />
-      </Datagrid>
+      {({ data, refetch }: any) => (
+        <>
+          <LeadsTopToolbar showKanban={showKanban} setShowKanban={setShowKanban} />
+
+          {showKanban ? (
+            // Kanban Board view
+            <Box sx={{ p: 2 }}>
+              <KanbanBoard
+                data={data}
+                onEdit={(id: string) => {
+                  window.location.hash = `#/leads/${id}`;
+                }}
+                onStageChange={(leadId: string, newStageCode: string) => {
+                  refetch();
+                }}
+              />
+            </Box>
+          ) : (
+            // Table view
+            <Datagrid rowClick="edit" bulkActionButtons={false}>
+              <TextField source="company" />
+              <TextField source="first_name" />
+              <TextField source="last_name" />
+              <NumberField source="score" />
+              <StatusField source="status" type="lead_status" />
+              <DateField source="created_at" showTime />
+              <EditButton />
+              <DeleteButton />
+            </Datagrid>
+          )}
+        </>
+      )}
     </List>
   );
 };
