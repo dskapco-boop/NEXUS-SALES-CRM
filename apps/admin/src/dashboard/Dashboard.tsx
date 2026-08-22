@@ -1,35 +1,36 @@
-import { Card, CardContent, CardHeader, Typography, Grid, Paper, Box, Table, TableBody, TableCell, TableHead, TableRow, Tabs, Tab } from "@mui/material";
+import { Card, CardContent, CardHeader, Typography, Grid, Paper, Box, Table, TableBody, TableCell, TableHead, TableRow } from "@mui/material";
 import { useEffect, useState } from "react";
 import { getSupabaseClient } from "@nexus-crm/api";
-import { KanbanBoard } from "../resources/KanbanBoard";
 
-// Krayin-style dashboard: metric cards + data tables + Kanban board
+// Krayin-style dashboard: metric cards + data tables
 // Uses Supabase directly to avoid react-admin context issues
 const supabase = getSupabaseClient();
 
 export const Dashboard = () => {
   const [metrics, setMetrics] = useState<any>({});
   const [recentLeads, setRecentLeads] = useState<any[]>([]);
-  const [allLeadsData, setAllLeadsData] = useState<any[]>([]);
   const [recentQuotes, setRecentQuotes] = useState<any[]>([]);
   const [accountsMap, setAccountsMap] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
-  const [activeView, setActiveView] = useState<"cards" | "kanban">("cards");
 
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
         setLoading(true);
 
-        // Fetch all leads (full data for Kanban board)
+        // Fetch recent leads (5 most recent)
+        const { data: leads, error: leadsError } = await supabase
+          .from("leads")
+          .select("id,first_name,last_name,company,status,source,score,created_at,custom_fields")
+          .order("created_at", { ascending: false })
+          .limit(5);
+        setRecentLeads(leads || []);
+
+        // Fetch all leads for metrics
         const { data: allLeads, error: allLeadsError } = await supabase
           .from("leads")
-          .select("id,first_name,last_name,company,status,source,score,created_at,custom_fields,pipeline_stage_id,pipeline_id");
+          .select("id,status,custom_fields");
         const leadsData = allLeads || [];
-        setAllLeadsData(leadsData);
-
-        // Fetch recent leads (5 most recent)
-        setRecentLeads(leadsData.slice(0, 5));
 
         // Fetch all opportunities
         const { data: allOpps } = await supabase
@@ -164,218 +165,186 @@ export const Dashboard = () => {
   const p = metrics.pipeline || {};
   const maxPipelineCount = Math.max(...pipelineStages.map((s) => p[s.id]?.count || 0), 1);
 
-  const handleEditLead = (id: string) => {
-    // Navigate to lead edit in the main CRM app
-    window.location.hash = `#/leads/${id}`;
-  };
-
   return (
     <Card>
       <CardHeader title="Nexus CRM" />
       <CardContent>
-        {/* View Toggle: Cards vs Kanban */}
-        <Box sx={{ marginBottom: 2 }}>
-          <Tabs
-            value={activeView}
-            onChange={(_, v) => setActiveView(v)}
-            size="small"
-          >
-            <Tab label="Overview" value="cards" />
-            <Tab label="Kanban Board" value="kanban" />
-          </Tabs>
-        </Box>
+        {/* Metric Cards Row */}
+        <Grid container spacing={2} sx={{ marginBottom: 2 }}>
+          <Grid item xs={12} display="flex" gap={2} flexWrap="wrap">
+            <MetricCard title="Won Revenue" value={fmt(metrics.wonRevenue || 0)} subtitle="This year" color="success" />
+            <MetricCard title="Lost Revenue" value={fmt(metrics.lostRevenue || 0)} color="warning" />
+            <MetricCard title="Total Leads" value={metrics.totalLeads || 0} subtitle="Active pipeline" color="info" />
+            <MetricCard title="Total Quotes" value={metrics.totalQuotes || 0} color="info" />
+            <MetricCard title="Avg Lead Value" value={fmt(metrics.avgLeadValue || 0)} color="info" />
+          </Grid>
+        </Grid>
 
-        {activeView === "kanban" ? (
-          <Box sx={{ p: 1 }}>
-            <KanbanBoard
-              data={allLeadsData}
-              onEdit={handleEditLead}
-              onStageChange={(leadId: string) => {
-                // Re-fetch data after stage change
-                window.location.reload();
-              }}
-            />
-          </Box>
-        ) : (
-          <>
-            {/* Metric Cards Row */}
-            <Grid container spacing={2} sx={{ marginBottom: 2 }}>
-              <Grid item xs={12} display="flex" gap={2} flexWrap="wrap">
-                <MetricCard title="Won Revenue" value={fmt(metrics.wonRevenue || 0)} subtitle="This year" color="success" />
-                <MetricCard title="Lost Revenue" value={fmt(metrics.lostRevenue || 0)} color="warning" />
-                <MetricCard title="Total Leads" value={metrics.totalLeads || 0} subtitle="Active pipeline" color="info" />
-                <MetricCard title="Total Quotes" value={metrics.totalQuotes || 0} color="info" />
-                <MetricCard title="Avg Lead Value" value={fmt(metrics.avgLeadValue || 0)} color="info" />
-              </Grid>
-            </Grid>
-
-            {/* Pipeline Summary */}
-            <Grid container spacing={3} sx={{ marginBottom: 2 }}>
-              {pipelineStages.map((stage) => {
-                const stageData = p[stage.id] || { count: 0, value: 0 };
-                const progressPercent = (stageData.count / maxPipelineCount) * 100;
-                return (
-                  <Grid item xs={12} md={2} key={stage.id}>
-                    <Paper sx={{ p: 2, backgroundColor: "#fff", textAlign: "center" }}>
-                      <Typography variant="caption" color="text.secondary">
-                        {stage.label}
-                      </Typography>
-                      <Typography variant="h4" sx={{ fontWeight: 700, color: stage.color, mt: 0.5 }}>
-                        {stageData.count}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                        {fmt(stageData.value)}
-                      </Typography>
-                      <Box sx={{ height: 4, backgroundColor: "#e5e7eb", borderRadius: 4, overflow: "hidden" }}>
-                        <Box
-                          sx={{
-                            width: `${progressPercent}%`,
-                            height: "100%",
-                            backgroundColor: stage.color,
-                            borderRadius: 4,
-                            transition: "width 0.3s ease",
-                          }}
-                        />
-                      </Box>
-                    </Paper>
-                  </Grid>
-                );
-              })}
-            </Grid>
-
-            {/* Revenue Breakdown */}
-            <Grid container spacing={3} sx={{ marginBottom: 2 }}>
-              <Grid item xs={12} md={4}>
-                <Paper sx={{ p: 2, backgroundColor: "#fff" }}>
-                  <Typography variant="subtitle2" color="text.secondary">
-                    Won Revenue
+        {/* Pipeline Summary */}
+        <Grid container spacing={3} sx={{ marginBottom: 2 }}>
+          {pipelineStages.map((stage) => {
+            const stageData = p[stage.id] || { count: 0, value: 0 };
+            const progressPercent = (stageData.count / maxPipelineCount) * 100;
+            return (
+              <Grid item xs={12} md={2} key={stage.id}>
+                <Paper sx={{ p: 2, backgroundColor: "#fff", textAlign: "center" }}>
+                  <Typography variant="caption" color="text.secondary">
+                    {stage.label}
                   </Typography>
-                  <Typography variant="h5" sx={{ fontWeight: 700, color: "#22c55e", mt: 0.5 }}>
-                    {fmt(metrics.wonRevenue || 0)}
+                  <Typography variant="h4" sx={{ fontWeight: 700, color: stage.color, mt: 0.5 }}>
+                    {stageData.count}
                   </Typography>
-                  <Box sx={{ mt: 1, height: 8, backgroundColor: "#e5e7eb", borderRadius: 4, overflow: "hidden" }}>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                    {fmt(stageData.value)}
+                  </Typography>
+                  <Box sx={{ height: 4, backgroundColor: "#e5e7eb", borderRadius: 4, overflow: "hidden" }}>
                     <Box
                       sx={{
-                        width: `${metrics.conversionRate || 0}%`,
+                        width: `${progressPercent}%`,
                         height: "100%",
-                        backgroundColor: "#22c55e",
+                        backgroundColor: stage.color,
                         borderRadius: 4,
+                        transition: "width 0.3s ease",
                       }}
                     />
                   </Box>
                 </Paper>
               </Grid>
-              <Grid item xs={12} md={4}>
-                <Paper sx={{ p: 2, backgroundColor: "#fff" }}>
-                  <Typography variant="subtitle2" color="text.secondary">
-                    Lost Revenue
-                  </Typography>
-                  <Typography variant="h5" sx={{ fontWeight: 700, color: "#ef4444", mt: 0.5 }}>
-                    {fmt(metrics.lostRevenue || 0)}
-                  </Typography>
-                  <Box sx={{ mt: 1, height: 8, backgroundColor: "#e5e7eb", borderRadius: 4, overflow: "hidden" }}>
-                    <Box
-                      sx={{
-                        width: `${100 - (metrics.conversionRate || 0)}%`,
-                        height: "100%",
-                        backgroundColor: "#ef4444",
-                        borderRadius: 4,
-                      }}
-                    />
-                  </Box>
-                </Paper>
-              </Grid>
-              <Grid item xs={12} md={4}>
-                <Paper sx={{ p: 2, backgroundColor: "#fff" }}>
-                  <Typography variant="subtitle2" color="text.secondary">
-                    Conversion Rate
-                  </Typography>
-                  <Typography variant="h5" sx={{ fontWeight: 700, color: "#3b82f1", mt: 0.5 }}>
-                    {metrics.conversionRate || 0}%
-                  </Typography>
-                  <Box sx={{ mt: 1, height: 8, backgroundColor: "#e5e7eb", borderRadius: 4, overflow: "hidden" }}>
-                    <Box
-                      sx={{
-                        width: `${metrics.conversionRate || 0}%`,
-                        height: "100%",
-                        backgroundColor: "#3b82f1",
-                        borderRadius: 4,
-                      }}
-                    />
-                  </Box>
-                </Paper>
-              </Grid>
-            </Grid>
+            );
+          })}
+        </Grid>
 
-            {/* Data Tables Row */}
-            <Grid container spacing={3}>
-              <Grid item xs={12} md={6}>
-                <Paper sx={{ p: 2, backgroundColor: "#fff" }}>
-                  <Typography variant="subtitle1" gutterBottom>
-                    Recent Leads
-                  </Typography>
-                  <Table size="small">
-                    <TableHead>
-                      <TableRow>
-                        <TableCell>Company</TableCell>
-                        <TableCell>Name</TableCell>
-                        <TableCell>Score</TableCell>
-                        <TableCell>Created</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {recentLeads.map((lead: any) => (
-                        <TableRow key={lead.id} hover>
-                          <TableCell>{lead.company || "-"}</TableCell>
-                          <TableCell>
-                            {lead.first_name} {lead.last_name}
-                          </TableCell>
-                          <TableCell>{lead.score || 0}</TableCell>
-                          <TableCell>
-                            {new Date(lead.created_at).toLocaleDateString()}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </Paper>
-              </Grid>
-              <Grid item xs={12} md={6}>
-                <Paper sx={{ p: 2, backgroundColor: "#fff" }}>
-                  <Typography variant="subtitle1" gutterBottom>
-                    Recent Quotes
-                  </Typography>
-                  <Table size="small">
-                    <TableHead>
-                      <TableRow>
-                        <TableCell>Quote #</TableCell>
-                        <TableCell>Account</TableCell>
-                        <TableCell>Amount</TableCell>
-                        <TableCell>Date</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {recentQuotes.map((quote: any) => (
-                        <TableRow key={quote.id} hover>
-                          <TableCell>{quote.quote_number || "-"}</TableCell>
-                          <TableCell>{accountsMap[quote.account_id] || "-"}</TableCell>
-                          <TableCell>
-                            {quote.total_amount
-                              ? `${parseFloat(quote.total_amount).toLocaleString()} د.إ`
-                              : "-"}
-                          </TableCell>
-                          <TableCell>
-                            {quote.quote_date ? new Date(quote.quote_date).toLocaleDateString() : "-"}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </Paper>
-              </Grid>
-            </Grid>
-          </>
-        )}
+        {/* Revenue Breakdown */}
+        <Grid container spacing={3} sx={{ marginBottom: 2 }}>
+          <Grid item xs={12} md={4}>
+            <Paper sx={{ p: 2, backgroundColor: "#fff" }}>
+              <Typography variant="subtitle2" color="text.secondary">
+                Won Revenue
+              </Typography>
+              <Typography variant="h5" sx={{ fontWeight: 700, color: "#22c55e", mt: 0.5 }}>
+                {fmt(metrics.wonRevenue || 0)}
+              </Typography>
+              <Box sx={{ mt: 1, height: 8, backgroundColor: "#e5e7eb", borderRadius: 4, overflow: "hidden" }}>
+                <Box
+                  sx={{
+                    width: `${metrics.conversionRate || 0}%`,
+                    height: "100%",
+                    backgroundColor: "#22c55e",
+                    borderRadius: 4,
+                  }}
+                />
+              </Box>
+            </Paper>
+          </Grid>
+          <Grid item xs={12} md={4}>
+            <Paper sx={{ p: 2, backgroundColor: "#fff" }}>
+              <Typography variant="subtitle2" color="text.secondary">
+                Lost Revenue
+              </Typography>
+              <Typography variant="h5" sx={{ fontWeight: 700, color: "#ef4444", mt: 0.5 }}>
+                {fmt(metrics.lostRevenue || 0)}
+              </Typography>
+              <Box sx={{ mt: 1, height: 8, backgroundColor: "#e5e7eb", borderRadius: 4, overflow: "hidden" }}>
+                <Box
+                  sx={{
+                    width: `${100 - (metrics.conversionRate || 0)}%`,
+                    height: "100%",
+                    backgroundColor: "#ef4444",
+                    borderRadius: 4,
+                  }}
+                />
+              </Box>
+            </Paper>
+          </Grid>
+          <Grid item xs={12} md={4}>
+            <Paper sx={{ p: 2, backgroundColor: "#fff" }}>
+              <Typography variant="subtitle2" color="text.secondary">
+                Conversion Rate
+              </Typography>
+              <Typography variant="h5" sx={{ fontWeight: 700, color: "#3b82f1", mt: 0.5 }}>
+                {metrics.conversionRate || 0}%
+              </Typography>
+              <Box sx={{ mt: 1, height: 8, backgroundColor: "#e5e7eb", borderRadius: 4, overflow: "hidden" }}>
+                <Box
+                  sx={{
+                    width: `${metrics.conversionRate || 0}%`,
+                    height: "100%",
+                    backgroundColor: "#3b82f1",
+                    borderRadius: 4,
+                  }}
+                />
+              </Box>
+            </Paper>
+          </Grid>
+        </Grid>
+
+        {/* Data Tables Row */}
+        <Grid container spacing={3}>
+          <Grid item xs={12} md={6}>
+            <Paper sx={{ p: 2, backgroundColor: "#fff" }}>
+              <Typography variant="subtitle1" gutterBottom>
+                Recent Leads
+              </Typography>
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Company</TableCell>
+                    <TableCell>Name</TableCell>
+                    <TableCell>Score</TableCell>
+                    <TableCell>Created</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {recentLeads.map((lead: any) => (
+                    <TableRow key={lead.id} hover>
+                      <TableCell>{lead.company || "-"}</TableCell>
+                      <TableCell>
+                        {lead.first_name} {lead.last_name}
+                      </TableCell>
+                      <TableCell>{lead.score || 0}</TableCell>
+                      <TableCell>
+                        {new Date(lead.created_at).toLocaleDateString()}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </Paper>
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <Paper sx={{ p: 2, backgroundColor: "#fff" }}>
+              <Typography variant="subtitle1" gutterBottom>
+                Recent Quotes
+              </Typography>
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Quote #</TableCell>
+                    <TableCell>Account</TableCell>
+                    <TableCell>Amount</TableCell>
+                    <TableCell>Date</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {recentQuotes.map((quote: any) => (
+                    <TableRow key={quote.id} hover>
+                      <TableCell>{quote.quote_number || "-"}</TableCell>
+                      <TableCell>{accountsMap[quote.account_id] || "-"}</TableCell>
+                      <TableCell>
+                        {quote.total_amount
+                          ? `${parseFloat(quote.total_amount).toLocaleString()} د.إ`
+                          : "-"}
+                      </TableCell>
+                      <TableCell>
+                        {quote.quote_date ? new Date(quote.quote_date).toLocaleDateString() : "-"}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </Paper>
+          </Grid>
+        </Grid>
       </CardContent>
     </Card>
   );
