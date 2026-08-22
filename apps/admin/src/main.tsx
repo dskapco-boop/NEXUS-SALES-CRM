@@ -1,6 +1,6 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
-import { Admin, Resource } from "react-admin";
+import { Admin, Resource, CustomRoute, CustomRoutes } from "react-admin";
 import { supabaseDataProvider } from "./providers/dataProvider";
 import { authProvider } from "./providers/authProvider";
 import { LeadsList, LeadCreate, LeadsEdit } from "./resources/Leads";
@@ -13,6 +13,8 @@ import { QuotationsList, QuotationsCreate, QuotationEdit } from "./resources/Quo
 import { SalesOrdersList, SalesOrdersEdit } from "./resources/SalesOrders";
 import { InvoicesList, InvoicesEdit } from "./resources/Invoices";
 import { Dashboard } from "./dashboard/Dashboard";
+import { SettingsPage } from "./settings/SettingsPage";
+import { AIPage } from "./ai/AIPage";
 
 import "./index.css";
 
@@ -66,6 +68,10 @@ root.render(
       theme={krayinTheme}
       darkTheme={darkTheme}
       dashboard={Dashboard}
+      customRoutes={[
+        { path: "/settings", component: SettingsPage },
+        { path: "/ai", component: AIPage },
+      ]}
     >
       <Resource name="leads" list={LeadsList} create={LeadCreate} edit={LeadsEdit} />
       <Resource name="opportunities" list={InquiriesList} create={InquiriesCreate} edit={InquiriesEdit} />

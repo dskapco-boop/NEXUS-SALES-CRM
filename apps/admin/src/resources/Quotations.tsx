@@ -1,3 +1,4 @@
+import React, { useState } from "react";
 import { 
   List, 
   Datagrid, 
@@ -17,9 +18,10 @@ import {
   useRecordContext,
   useListContext,
 } from "react-admin";
-import { NumberField, ReferenceField } from "react-admin";
+import { NumberField, ReferenceField, Button } from "react-admin";
 import { StatusField } from "../components/StatusBadge";
 import { EditButton } from "react-admin";
+import { InvoicePreview } from "./InvoicePreview";
 
 // Quotations resource following PRD Section 7.1
 export const QuotationsList = (props: any) => (
@@ -46,12 +48,31 @@ export const QuotationsList = (props: any) => (
   </List>
 );
 
-const QuoteToolbar = (props: any) => (
-  <Toolbar {...props}>
-    <SaveButton saveOnEnter={false} />
-    <DeleteButton />
-  </Toolbar>
-);
+// Custom toolbar with Preview Invoice button
+const QuoteEditToolbar = (props: any) => {
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const record = useRecordContext();
+
+  return (
+    <Toolbar {...props}>
+      <SaveButton saveOnEnter={false} />
+      <Button
+        label="Preview Invoice"
+        onClick={() => setPreviewOpen(true)}
+        variant="outlined"
+        size="small"
+      />
+      <DeleteButton />
+      {record && (
+        <InvoicePreview
+          open={previewOpen}
+          onClose={() => setPreviewOpen(false)}
+          quotation={record}
+        />
+      )}
+    </Toolbar>
+  );
+};
 
 // Line Items field components
 const QuoteLineItems = () => {
@@ -88,7 +109,7 @@ const QuoteLineItems = () => {
 
 export const QuotationsCreate = (props: any) => (
   <Create {...props} title="Create Quotation">
-    <SimpleForm toolbar={<QuoteToolbar />} fullWidth>
+    <SimpleForm toolbar={<QuoteEditToolbar />} fullWidth>
       {/* Header */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <ReferenceInput source="account_id" reference="accounts" link={false}>
@@ -125,15 +146,6 @@ export const QuotationsCreate = (props: any) => (
           ]}
           defaultValue="AED"
         />
-      </div>
-
-      {/* Line Items Section - using ArrayInput would be complex,
-          for now showing as informational with totals */}
-      <div>
-        <label className="block text-sm font-medium mb-2">Line Items</label>
-        <p className="text-sm text-muted-foreground mb-2">
-          Line items will be added when you convert to order
-        </p>
       </div>
 
       {/* Totals */}
@@ -205,7 +217,7 @@ export const QuotationsCreate = (props: any) => (
 
 export const QuotationEdit = (props: any) => (
   <Edit {...props} title="Edit Quotation">
-    <SimpleForm toolbar={<QuoteToolbar />} fullWidth>
+    <SimpleForm toolbar={<QuoteEditToolbar />} fullWidth>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <ReferenceInput source="account_id" reference="accounts" link={false}>
           <SelectInput
