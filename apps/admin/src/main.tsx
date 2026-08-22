@@ -2,7 +2,7 @@ import React from "react";
 import { createRoot } from "react-dom/client";
 import { Admin, Resource, Menu } from "react-admin";
 import { Box, ListItemIcon, ListItemText } from "@mui/material";
-import { Settings as SettingsIcon, SmartToy as AIIcon } from "@mui/icons-material";
+import { Settings as SettingsIcon, SmartToy as AIIcon, Dashboard as DashboardIcon } from "@mui/icons-material";
 import { supabaseDataProvider } from "./providers/dataProvider";
 import { authProvider } from "./providers/authProvider";
 import { LeadsList, LeadCreate, LeadsEdit } from "./resources/Leads";
@@ -24,7 +24,10 @@ import "./index.css";
 // Uses MUI components wrapped in react-admin's Menu
 const CustomMenu = (props: any) => (
   <Menu {...props}>
-    <Menu.DashboardItem {...props} />
+    <Box component="span" onClick={() => { window.location.hash = "#/dashboard"; }} sx={{ cursor: "pointer", display: "flex", alignItems: "center", px: 2, py: 1.5, borderRadius: 1, "&:hover": { backgroundColor: "action.hover" } }}>
+      <ListItemIcon><DashboardIcon fontSize="small" /></ListItemIcon>
+      <ListItemText primary="Dashboard" />
+    </Box>
     <Menu.ResourceItem name="leads" {...props} />
     <Menu.ResourceItem name="opportunities" {...props} />
     <Menu.ResourceItem name="quotes" {...props} />
