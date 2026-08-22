@@ -17,6 +17,8 @@ import { InvoicesList, InvoicesEdit } from "./resources/Invoices";
 import { Dashboard } from "./dashboard/Dashboard";
 import { SettingsPage } from "./settings/SettingsPage";
 import { AIPage } from "./ai/AIPage";
+import { EmailAccountsList, EmailAccountsCreate, EmailAccountsEdit } from "./resources/EmailAccounts";
+import { EmailsList, EmailsEdit } from "./resources/Emails";
 
 import "./index.css";
 
@@ -38,9 +40,11 @@ const CustomMenu = (props: any) => (
       <ListItemText primary="Settings" />
     </Box>
     <Box component="span" onClick={() => { window.location.hash = "#/ai"; }} sx={{ cursor: "pointer", display: "flex", alignItems: "center", px: 2, py: 1.5, borderRadius: 1, "&:hover": { backgroundColor: "action.hover" } }}>
-      <ListItemIcon><AIIcon fontSize="small" /></ListItemIcon>
-      <ListItemText primary="AI Functions" />
+    <ListItemIcon><AIIcon fontSize="small" /></ListItemIcon>
+    <ListItemText primary="AI Functions" />
     </Box>
+    <Menu.ResourceItem name="email_accounts" {...props} />
+    <Menu.ResourceItem name="emails" {...props} />
   </Menu>
 );
 
@@ -105,6 +109,8 @@ root.render(
       <Resource name="quotes" list={QuotationsList} create={QuotationsCreate} edit={QuotationEdit} />
       <Resource name="sales_orders" list={SalesOrdersList} edit={SalesOrdersEdit} />
       <Resource name="invoices" list={InvoicesList} edit={InvoicesEdit} />
+      <Resource name="email_accounts" list={EmailAccountsList} create={EmailAccountsCreate} edit={EmailAccountsEdit} />
+      <Resource name="emails" list={EmailsList} edit={EmailsEdit} />
     </Admin>
   </React.StrictMode>,
 );
