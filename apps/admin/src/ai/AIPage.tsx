@@ -77,6 +77,35 @@ export const AIPage: React.FC = () => {
 
       if (leadsErr) throw leadsErr;
 
+      // Fetch email engagement data for each lead
+      const leadIds = leads.map((l: any) => l.id);
+
+      // Get email engagement stats per lead (emails linked to this lead)
+      const { data: emailStats, error: emailErr } = await supabase
+        .from("emails")
+        .select("related_to_id, direction, is_read, sent_at")
+        .in("related_to_id", leadIds)
+        .eq("related_to_table", "leads");
+
+      const emailStatsMap: Record<string, { total: number; unread: number; outbound: number; lastEmail?: string }> = {};
+      if (emailStats) {
+        emailStats.forEach((e: any) => {
+          const key = e.related_to_id;
+          if (!emailStatsMap[key]) {
+            emailStatsMap[key] = { total: 0, unread: 0, outbound: 0 };
+          }
+          emailStatsMap[key].total += 1;
+          if (!e.is_read && e.direction === "inbound") emailStatsMap[key].unread += 1;
+          if (e.direction === "outbound") emailStatsMap[key].outbound += 1;
+          if (e.sent_at) {
+            const existing = emailStatsMap[key].lastEmail;
+            if (!existing || new Date(e.sent_at) > new Date(existing)) {
+              emailStatsMap[key].lastEmail = e.sent_at;
+            }
+          }
+        });
+      }
+
       // Simulate AI scoring — in production this would call a GPT endpoint via OmniRoute
       const scoredLeads: AILeadScore[] = leads.map((lead: any) => {
         let score = lead.score || Math.floor(Math.random() * 50) + 25;
@@ -92,6 +121,30 @@ export const AIPage: React.FC = () => {
         if (lead.notes && lead.notes.length > 50) {
           score += 10;
           reasons.push("Rich notes indicate engagement");
+        }
+
+        // Score based on email engagement
+        const engagement = emailStatsMap[lead.id];
+        if (engagement) {
+          if (engagement.total > 0) {
+            score += engagement.outbound * 5;
+            reasons.push(`${engagement.total} email(s) with this lead (${engagement.outbound} sent, ${engagement.unread} unread)`);
+          }
+          if (engagement.unread > 0) {
+            score += 10;
+            reasons.push(`${engagement.unread} unread email(s) — high interest`);
+          }
+          // Email recency
+          if (engagement.lastEmail) {
+            const daysSince = (Date.now() - new Date(engagement.lastEmail).getTime()) / (1000 * 60 * 60 * 24);
+            if (daysSince < 3) {
+              score += 15;
+              reasons.push("Recent email activity — very hot");
+            } else if (daysSince < 7) {
+              score += 8;
+              reasons.push("Recent email activity");
+            }
+          }
         }
 
         // Score based on recency
