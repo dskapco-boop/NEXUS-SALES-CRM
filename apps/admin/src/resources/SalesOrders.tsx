@@ -27,7 +27,7 @@ export const SalesOrdersList = (props: any) => (
       <ReferenceField source="account_id" reference="accounts" link={false}>
         <TextField source="name" />
       </ReferenceField>
-      <ReferenceField source="quote_id" reference="quotations" link={false}>
+      <ReferenceField source="quote_id" reference="quotes" link={false}>
         <TextField source="quote_number" />
       </ReferenceField>
       <StatusField source="status" type="order_status" />
@@ -54,7 +54,7 @@ export const SalesOrdersEdit = (props: any) => (
   <Edit {...props} title="Edit Sales Order">
     <SimpleForm toolbar={<OrderToolbar />} fullWidth>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <ReferenceInput source="quote_id" reference="quotations" link={false}>
+        <ReferenceInput source="quote_id" reference="quotes" link={false}>
           <SelectInput
             source="quote_id"
             label="Source Quote"
