@@ -37,45 +37,50 @@ const LeadsTopToolbar = ({ showKanban, setShowKanban }: any) => (
   </TopToolbar>
 );
 
+// Inner content of the Leads list — uses useListContext to access data
+const LeadsListContent = ({ showKanban, setShowKanban }: any) => {
+  const listContext = useListContext();
+
+  return (
+    <>
+      <LeadsTopToolbar showKanban={showKanban} setShowKanban={setShowKanban} />
+
+      {showKanban ? (
+        <Box sx={{ p: 2 }}>
+          <KanbanBoard
+            data={listContext.data}
+            onEdit={(id: string) => {
+              window.location.hash = `#/leads/${id}`;
+            }}
+            onStageChange={() => {
+              listContext.refetch();
+            }}
+          />
+        </Box>
+      ) : (
+        <Datagrid rowClick="edit" bulkActionButtons={false}>
+          <TextField source="company" />
+          <TextField source="first_name" />
+          <TextField source="last_name" />
+          <NumberField source="score" />
+          <StatusField source="status" type="lead_status" />
+          <DateField source="created_at" showTime />
+          <EditButton />
+          <DeleteButton />
+        </Datagrid>
+      )}
+    </>
+  );
+};
+
 // Main Leads List with Kanban/Table toggle
-// The <List> provides the data context for both views
+// <List> wraps both views, providing data context via useListContext
 export const LeadsList = (props: any) => {
   const [showKanban, setShowKanban] = useState(true); // Default to Kanban (matches Krayin design)
 
   return (
     <List {...props} title="Leads" exporter={false}>
-      {({ data, refetch }: any) => (
-        <>
-          <LeadsTopToolbar showKanban={showKanban} setShowKanban={setShowKanban} />
-
-          {showKanban ? (
-            // Kanban Board view
-            <Box sx={{ p: 2 }}>
-              <KanbanBoard
-                data={data}
-                onEdit={(id: string) => {
-                  window.location.hash = `#/leads/${id}`;
-                }}
-                onStageChange={(leadId: string, newStageCode: string) => {
-                  refetch();
-                }}
-              />
-            </Box>
-          ) : (
-            // Table view
-            <Datagrid rowClick="edit" bulkActionButtons={false}>
-              <TextField source="company" />
-              <TextField source="first_name" />
-              <TextField source="last_name" />
-              <NumberField source="score" />
-              <StatusField source="status" type="lead_status" />
-              <DateField source="created_at" showTime />
-              <EditButton />
-              <DeleteButton />
-            </Datagrid>
-          )}
-        </>
-      )}
+      <LeadsListContent showKanban={showKanban} setShowKanban={setShowKanban} />
     </List>
   );
 };
@@ -89,13 +94,11 @@ export const LeadCreate = (props: any) => (
         <TextInput fullWidth source="email" type="email" label="Email" />
         <TextInput fullWidth source="phone" label="Phone" />
       </div>
-
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <TextInput fullWidth source="mobile" label="Mobile" />
         <TextInput fullWidth source="job_title" label="Job Title" />
         <TextInput fullWidth source="company" label="Company" isRequired />
       </div>
-
       <SelectInput
         source="source"
         label="Lead Source"
@@ -110,7 +113,6 @@ export const LeadCreate = (props: any) => (
         ]}
         isRequired
       />
-
       <SelectInput
         source="status"
         label="Status"
@@ -124,7 +126,6 @@ export const LeadCreate = (props: any) => (
         ]}
         isRequired
       />
-
       <TextInput fullWidth source="custom_fields.industry" label="Industry" />
       <NumberInput source="custom_fields.estimated_value" label="Estimated Value (AED)" />
       <SelectInput
@@ -144,7 +145,6 @@ export const LeadCreate = (props: any) => (
         rows={4}
         fullWidth
       />
-
       <h3 className="text-lg font-medium mt-4 mb-2">Address</h3>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <TextInput fullWidth source="address.city" label="City" />
@@ -153,7 +153,6 @@ export const LeadCreate = (props: any) => (
         <TextInput fullWidth source="address.postal_code" label="Postal Code" />
         <TextInput fullWidth source="address.street" label="Street Address" />
       </div>
-
       <h3 className="text-lg font-medium mt-4 mb-2">ISO Consultancy Details (Optional)</h3>
       <TextInput fullWidth source="custom_fields.iso_standards" label="ISO Standards Interested" helperText="e.g., 9001, 14001" />
       <SelectInput
@@ -181,13 +180,11 @@ export const LeadsEdit = (props: any) => (
         <TextInput fullWidth source="email" type="email" label="Email" />
         <TextInput fullWidth source="phone" label="Phone" />
       </div>
-
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <TextInput fullWidth source="mobile" label="Mobile" />
         <TextInput fullWidth source="job_title" label="Job Title" />
         <TextInput fullWidth source="company" label="Company" isRequired />
       </div>
-
       <SelectInput
         source="source"
         label="Lead Source"
@@ -202,7 +199,6 @@ export const LeadsEdit = (props: any) => (
         ]}
         isRequired
       />
-
       <SelectInput
         source="status"
         label="Status"
@@ -216,7 +212,6 @@ export const LeadsEdit = (props: any) => (
         ]}
         isRequired
       />
-
       <TextInput fullWidth source="custom_fields.industry" label="Industry" />
       <NumberInput source="custom_fields.estimated_value" label="Estimated Value (AED)" />
       <SelectInput
@@ -237,7 +232,6 @@ export const LeadsEdit = (props: any) => (
         rows={4}
         fullWidth
       />
-
       <h3 className="text-lg font-medium mt-4 mb-2">Address</h3>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <TextInput fullWidth source="address.city" label="City" />
@@ -246,7 +240,6 @@ export const LeadsEdit = (props: any) => (
         <TextInput fullWidth source="address.postal_code" label="Postal Code" />
         <TextInput fullWidth source="address.street" label="Street Address" />
       </div>
-
       <h3 className="text-lg font-medium mt-4 mb-2">ISO Consultancy Details (Optional)</h3>
       <TextInput fullWidth source="custom_fields.iso_standards" label="ISO Standards Interested" />
       <SelectInput
