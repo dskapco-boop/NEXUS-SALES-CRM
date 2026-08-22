@@ -1,6 +1,6 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
-import { Admin, Resource, CustomRoute, CustomRoutes } from "react-admin";
+import { Admin, Resource, Menu, MenuItem } from "react-admin";
 import { supabaseDataProvider } from "./providers/dataProvider";
 import { authProvider } from "./providers/authProvider";
 import { LeadsList, LeadCreate, LeadsEdit } from "./resources/Leads";
@@ -17,6 +17,24 @@ import { SettingsPage } from "./settings/SettingsPage";
 import { AIPage } from "./ai/AIPage";
 
 import "./index.css";
+
+// Custom menu with Settings and AI entries in sidebar
+const CustomMenu = (props: any) => (
+  <Menu {...props}>
+    <Menu.DashboardItem {...props} />
+    <Menu.ResourceItem name="leads" {...props} />
+    <Menu.ResourceItem name="opportunities" {...props} />
+    <Menu.ResourceItem name="quotes" {...props} />
+    <Menu.ResourceItem name="sales_orders" {...props} />
+    <Menu.ResourceItem name="invoices" {...props} />
+    <MenuItem name="settings" {...props}>
+      ⚙️ Settings
+    </MenuItem>
+    <MenuItem name="ai" {...props}>
+      🤖 AI Functions
+    </MenuItem>
+  </Menu>
+);
 
 // Krayin-inspired theme: blue primary (#3b82f1), clean sidebar
 const krayinTheme = {
@@ -72,6 +90,7 @@ root.render(
         { path: "/settings", component: SettingsPage },
         { path: "/ai", component: AIPage },
       ]}
+      menu={CustomMenu}
     >
       <Resource name="leads" list={LeadsList} create={LeadCreate} edit={LeadsEdit} />
       <Resource name="opportunities" list={InquiriesList} create={InquiriesCreate} edit={InquiriesEdit} />
